@@ -92,10 +92,10 @@ void Interpolation::setInterpolation(Point p0, Point p1, float av) {
   }
 
   if (v < 5) { //includes 0 = default value
-    v = sqrt(dist) * 10; //set a good value for v
+    v = sqrt(dist) * 10 * 1.2; //set a good value for v
   }
   if (v < 5) {
-     v = 5; 
+     v = 5 * 1.2; 
   }
   
   tmul = v / dist;
@@ -152,7 +152,7 @@ void Interpolation::updateActualPosition() {
       break;
     // COSIN APPROX
     case 2:
-      progress = -cos(t * tmul * PI) * 0.5 + 0.5 + 0.25;
+      progress = -cos(t * tmul * PI) * 0.5 + 0.5;
       if ((t * tmul) >= 1.0) {
         progress = 1.0; 
         state = 1;

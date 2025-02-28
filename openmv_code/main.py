@@ -243,8 +243,8 @@ def set_point(X,Y,Z,E):
     while(True):
         data_to_send = "G1 X{} Y{} Z{} E{}\r\n".format(X, Y, Z, E)
         time.sleep_ms(100)
-        data_to_send = "G1 X{} Y{} Z{} E{}\r\n".format(X, Y, Z, E)
-        time.sleep_ms(100)
+        uart.write(data_to_send)
+        uart.write(data_to_send)
         uart.write(data_to_send)
         if uart.any():
             data = uart.read()  # 读取所有可用数据
@@ -312,7 +312,7 @@ def playpiano():
     return nums
 
 # playpiano()
-home_seting()
+# home_seting()
 set_point(0,200,-33,0)
 time.sleep_ms(1000)
 # ready2play(0)
