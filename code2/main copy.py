@@ -124,8 +124,12 @@ def playpiano_1():
         tkey_now ,index_now = key_now(i)
         tkey_last ,index_last = key_last(i)
         tkey_next ,index_next = key_next(i)
-        print(tkey_last,tkey_now,tkey_next)
-        print(index_last,index_now,index_next)
+        print(index_now)
+        # print(index_last,index_now,index_next)
+
+        dis1 = abs(index_now - arm1_point_last)
+        dis2 = abs(index_now - arm2_point_last)
+        print(dis1,dis2,arm1_point_last,arm2_point_last)
         if i == 0:
             if tkey_now in high_midi_sequence:
                 while True:  
@@ -142,7 +146,7 @@ def playpiano_1():
                             break
                 dish = int((config.piano_map_disE_list_mm[index_now]-(config.key_len*20))/2)
                 go2point('START',i,1,-5,250,play_ready,E=dish)
-                time.sleep_ms(1000)
+                arm1_point_last = index_now
                 if index_now in config.black_key:
                     time.sleep_ms(1000)
                     # playb(1,E=int((config.piano_map_disE_list_mm[index_now]-(config.key_len*20))/2),T=int(durations[index_now]))
@@ -150,7 +154,7 @@ def playpiano_1():
                     time.sleep_ms(1000)
                     # play(1,E=int((config.piano_map_disE_list_mm[index_now]-(config.key_len*20))/2),T=int(durations[index_now]))
         else:
-            if tkey_now in high_midi_sequence:
+            if dis1 <= dis2 and index_now >= 35:
                 while True:  
                     data_to_send = b"{}".format(999)
                     datas.send_packet(uart2, data_to_send)
@@ -160,37 +164,25 @@ def playpiano_1():
                         receiver.reset()
                         content = received_data.decode('utf-8') 
                         if content == 'OVER':
-                            print(content)    
-                            # time.sleep_ms(500) 
+                            # print(content)    
+                            time.sleep_ms(200) 
                             break
-                dis = abs(tkey_now - tkey_last)
-                if (tkey_now >= tkey_last) or dis < 5:
-                    dish = int((config.piano_map_disE_list_mm[index_now]-(config.key_len*20))/2)
-                    if dish < 0 :
-                        dish = 200
-                    go2point('run1',i,1,-5,250,play_ready,E=dish)
-                    if index_now in config.black_key:
-                        time.sleep_ms(1000)
-                        # playb(1,E=int((config.piano_map_disE_list_mm[index_now]-(config.key_len*20))/2),T=int(durations[index_now]))
-                    else:
-                        time.sleep_ms(1000)
-                        # play(1,E=int((config.piano_map_disE_list_mm[index_now]-(config.key_len*20))/2),T=int(durations[index_now]))
+                dish = int((config.piano_map_disE_list_mm[index_now]-(config.key_len*20))/2)
+                if dish < 0 :
+                    dish = 200
+                go2point('run1',i,1,-5,250,play_ready,E=dish)
+                arm1_point_last = index_now
+                arm2_point_last = 20
+                if index_now in config.black_key:
+                    time.sleep_ms(1000)
+                    # playb(1,E=int((config.piano_map_disE_list_mm[index_now]-(config.key_len*20))/2),T=int(durations[index_now]))
                 else:
-                    go2point("run2",i,1,-4,250,play_ready,E=int(400)/2)
-                    data_to_send = b"{}".format(i)
-                    while True:
-                        datas.send_packet(uart2, data_to_send)
-                        time.sleep_ms(100)
-                        if receiver.process(uart2):
-                            received_data = receiver.packet
-                            receiver.reset()
-                            content = received_data.decode('utf-8')  
-                            if content == 'OVER':
-                                # print(content)    
-                                time.sleep_ms(200) 
-                                break
+                    time.sleep_ms(1000)
+                    # play(1,E=int((config.piano_map_disE_list_mm[index_now]-(config.key_len*20))/2),T=int(durations[index_now]))
             else:
-                go2point("run2",i,1,-4,250,play_ready,E=int(400)/2)
+                go2point("run2",i,1,-4,250,play_ready,E=int((config.piano_map_disE_list_mm[61]-(config.key_len*20))/2))
+                arm1_point_last = 61
+                arm2_point_last = index_now
                 data_to_send = b"{}".format(i)
                 while True:
                     datas.send_packet(uart2, data_to_send)
@@ -207,7 +199,7 @@ def playpiano_1():
 
 
 
-# home_seting()
+home_seting()
 set_point(1,-5,200,play_ready,0)
 time.sleep_ms(1000)
 

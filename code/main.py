@@ -118,18 +118,28 @@ def playpiano(number):
 
 set_point(0,200,play_ready,0)
 
-
+content_last = 0
+flap = 1
 while True:
     if receiver.process(uart2):
         content = 0
         received_data = receiver.packet
-        receiver.reset() 
         content = int(received_data.decode('utf-8'))  # 结果：'999'
-        # print(content)    
-        if content != None and content<=len(pitches):
-            playpiano(content)
+        if content != content_last:
+            if content != None and content<=len(pitches):
+                playpiano(content)
+            elif  content == 999:
+                go2point("G",0,0,-4,200,play_ready,E=int(100)/2)
+                data_to_send = b"OVER"
+                for i in range(3):
+                    datas.send_packet(uart2, data_to_send)
+                    time.sleep_ms(100)
+            content_last = content
+            flap = 1
         elif  content == 999:
-            go2point("G",0,0,-4,200,play_ready,E=int(100)/2)
+            if flap == 1:
+                go2point("K",0,0,-4,200,play_ready,E=int((config.piano_map_disE_list_mm[20]-(config.key_len*11))/2))
+                flap = 0
             data_to_send = b"OVER"
             for i in range(3):
                 datas.send_packet(uart2, data_to_send)
