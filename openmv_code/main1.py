@@ -1,6 +1,7 @@
+
 import os
 import time
-from pyb import UART
+from pyb import UART,Pin
 import sensor
 import time
 sensor.reset()  # Reset and initialize the sensor.
@@ -9,10 +10,9 @@ sensor.set_framesize(sensor.QVGA)  # Set frame size to QVGA (320x240)
 sensor.skip_frames(time=20)  # Wait for settings take effect.
 clock = time.clock()  # Create a clock object to track the FPS.
 # UART 3, and baudrate.
-uart2 = UART(1, 115200, timeout_char=20)
+uart = UART(3, 115200, timeout_char=100) 
 
-uart1 = UART(3, 115200, timeout_char=20)
-
+uart2 = UART(1, 115200, timeout_char=1) 
 # 假设你已经将 XML 数据以文本方式存储在文件中
 # 下面是读取文件并打印音高与时值的代码
 
@@ -87,38 +87,6 @@ print("所有音高:")
 print(pitches)
 print(len(pitches))
 
-# print("\n所有时值:")
-# print(durations)
-
-# print("\n高音:")
-# print(high)
-
-# print("\n低音:")
-# print(low)
-
-# print("\n高音时值:")
-# print(high_durations)
-
-# print("\n低音时值:")
-# print(low_durations)
-
-
-#钢琴长122.5cm
-#白键52个
-#黑键36个
-# piano_map_list = [
-#     "A0", "Bb0", "B0",
-#     "C1", "Db1", "D1", "Eb1", "E1", "F1", "Gb1", "G1", "Ab1", "A1", "Bb1", "B1",    #C1
-#     "C2", "Db2", "D2", "Eb2", "E2", "F2", "Gb2", "G2", "Ab2", "A2", "Bb2", "B2",    #C2  
-#     "C3", "Db3", "D3", "Eb3", "E3", "F3", "Gb3", "G3", "Ab3", "A3", "Bb3", "B3",    #C3
-#     "C4", "Db4", "D4", "Eb4", "E4", "F4", "Gb4", "G4", "Ab4", "A4", "Bb4", "B4",    #C4
-#     "C5", "Db5", "D5", "Eb5", "E5", "F5", "Gb5", "G5", "Ab5", "A5", "Bb5", "B5",    #C5
-#     "C6", "Db6", "D6", "Eb6", "E6", "F6", "Gb6", "G6", "Ab6", "A6", "Bb6", "B6",    #C6
-#     "C7", "Db7", "D7", "Eb7", "E7", "F7", "Gb7", "G7", "Ab7", "A7", "Bb7", "B7",    #C7
-#     "C8"                                                                            #C8
-# ]
-
-
 piano_map_list_2 = [
     "A0", "A#0", "B0",
     "C1", "C#1", "D1", "D#1", "E1", "F1", "F#1", "G1", "G#1", "A1", "A#1", "B1",    # C1
@@ -130,6 +98,7 @@ piano_map_list_2 = [
     "C7", "C#7", "D7", "D#7", "E7", "F7", "F#7", "G7", "G#7", "A7", "A#7", "B7",      # C7
     "C8"                                                                              # C8
 ]
+
 
 black_key = [1,4,6,9,
             11,13,16,18,
@@ -259,185 +228,219 @@ piano_start_point_z = 120
 piano_start_point_e = 0
 
 play_ready=-30
-play_down_b=-70
+play_down_b=-65
 play_down_w=-75
+# 通信协议格式：
+# [帧头(2)] [数据长度(1)] [数据(n)] [校验和(1)] [帧尾(2)]
+# 字节索引：0 1        2         3~n+2     n+3       n+4 n+5
+
+# 协议常量定义
+HEADER = b'\xAA\xBB'  # 2字节帧头
+FOOTER = b'\xCC\xDD'  # 2字节帧尾
+MAX_DATA_LEN = 255    # 最大数据长度
+
+# 校验和计算（异或校验）
+def calculate_checksum(data):
+    checksum = 0
+    for byte in data:
+        checksum ^= byte
+    return checksum
+
+# ----------------- 发送端代码 -----------------
+def send_packet(uart, data):
+    # 检查数据长度
+    if len(data) > MAX_DATA_LEN:
+        raise ValueError("Data too long")
+    
+    # 构造数据包
+    packet = HEADER
+    packet += bytes([len(data)])  # 数据长度字节
+    packet += data
+    packet += bytes([calculate_checksum(data)])
+    packet += FOOTER
+    
+    # 发送数据
+    uart.write(packet)
 
 
-def parse_gcode_move(data):
-    line = data.decode('utf-8').strip()
-    start = line.find('[') + 1
-    end = line.find(']', start)
-    
-    # 同时返回字典和有序列表
-    coord_dict = {}
-    coord_list = []
-    
-    for param in line[start:end].split():
-        key, val = param.split(':')
-        coord_dict[key] = float(val)
-        coord_list.append(float(val))  # 按出现顺序存储
-    
-    return coord_dict, coord_list
+
 
 # 使用示例
-data = b'INFO: LINEAR MOVE: [X:-5.00 Y:230.00 Z:-75.00 E:118.00]\r\n'
-dict_data, list_data = parse_gcode_move(data)
+# uart = UART(3, 115200)  # 初始化串口
+# send_packet(uart, b'Hello OpenMV')
+
+# ----------------- 接收端代码 -----------------
+class PacketReceiver:
+    def __init__(self):
+        self.state = 0       # 状态机
+        self.data_len = 0    # 数据长度
+        self.data = bytearray()
+        self.checksum = 0    # 接收校验和
+        self.packet = None   # 接收完成的数据包
+
+    def process(self, uart):
+        while uart.any():
+            byte = uart.read(1)
+            if not byte:
+                continue
+
+            # 状态机处理
+            if self.state == 0:  # 等待帧头1
+                if byte == HEADER[0:1]:
+                    self.state = 1
+            elif self.state == 1:  # 等待帧头2
+                if byte == HEADER[1:2]:
+                    self.state = 2
+                else:
+                    self.state = 0
+            elif self.state == 2:  # 获取数据长度
+                self.data_len = byte[0]
+                self.data = bytearray()
+                self.state = 3
+            elif self.state == 3:  # 接收数据
+                self.data.append(byte[0])
+                if len(self.data) == self.data_len:
+                    self.state = 4
+            elif self.state == 4:  # 校验和验证
+                expected = calculate_checksum(self.data)
+                if byte[0] == expected:
+                    self.state = 5
+                else:
+                    self.reset()
+            elif self.state == 5:  # 等待帧尾1
+                if byte == FOOTER[0:1]:
+                    self.state = 6
+                else:
+                    self.reset()
+            elif self.state == 6:  # 等待帧尾2
+                if byte == FOOTER[1:2]:
+                    self.packet = self.data
+                    self.reset()
+                    return True  # 完整包接收完成
+                else:
+                    self.reset()
+            else:
+                self.reset()
+        return False
+
+    def reset(self):
+        self.state = 0
+        self.data_len = 0
+        self.data = bytearray()
+        self.checksum = 0
+
+receiver = PacketReceiver()
+# 使用示例
+# receiver = PacketReceiver()
+# while True:
+#     if receiver.process(uart):
+#         print("Received:", receiver.packet)
 
 
-def set_point(flag,X,Y,Z,E):
-    if flag == 1:
-        data_to_send1 = "G1 X{} Y{} Z{} E{}\r\n".format(X, Y, Z, E)
-        while(True):
-            uart1.write(data_to_send1)
-            uart1.write(data_to_send1)
-            uart1.write(data_to_send1)
-            time.sleep_ms(100)
-            if uart1.any():
-                # time.sleep_ms(200)
-                data1 = uart1.read()  # 读取所有可用数据
-                if (b'MOVE' in data1) and  (b']\r\n' in data1) and (len(data1)<70 and len(data1)>50):
-                    print('data1:',data1)
-                    # dict_data, list_data = parse_gcode_move(data1)
-                    # if dict_data['X']!=0 or dict_data['Y']!=0 or dict_data['Z']!=0:
-                        # print("uart1:",dict_data['X'],dict_data['Y'],dict_data['Z'])
-                    break
-    elif flag == 2:
-        data_to_send2= "G1 X{} Y{} Z{} E{}\r\n".format(X, Y, Z, E)
-        while(True):
-            uart2.write(data_to_send2)
-            uart2.write(data_to_send2)
-            uart2.write(data_to_send2)
-            time.sleep_ms(100)
-            if uart2.any():
-                # time.sleep_ms(200)
-                data2 = uart2.read()  # 读取所有可用数据       
-                if (b'MOVE' in data2) and (b']\r\n' in data2) and (len(data2)<70 and len(data2)>50):
-                    print('data2:',data2)
-                    # dict_data2, list_data2 = parse_gcode_move(data2)
-                    # if dict_data2['X']!=0 or dict_data2['Y']!=0 or dict_data2['Z']!=0:
-                        # print("uart2:",dict_data2['X'],dict_data2['Y'],dict_data2['Z'])
-                    break
 
-def play(flag,E,T):
-    if flag == 1:
-        set_point(1,-5,230,play_down_w,E)
-        time.sleep_ms(T*250)
-        set_point(1,-5,250,play_ready,E)
+
+
+
+
+
+
+def set_point(X,Y,Z,E):
+    data_to_send = "G1 X{} Y{} Z{} E{}\r\n".format(X, Y, Z, E)
+    while(True):
+        uart.write(data_to_send)
+        uart.write(data_to_send)
+        uart.write(data_to_send)
         time.sleep_ms(100)
-    elif flag == 2:
-        set_point(2,-4,174,play_down_w+10,E)
-        time.sleep_ms(T*250)
-        set_point(2,-4,174,play_ready,E)
-        time.sleep_ms(100)
+        if uart.any():
+            # time.sleep_ms(200)
+            data1 = uart.read()  # 读取所有可用数据
+            if (b'MOVE' in data1):
+                print('data1:',data1)
+                # dict_data, list_data = parse_gcode_move(data1)
+                # if dict_data['X']!=0 or dict_data['Y']!=0 or dict_data['Z']!=0:
+                    # print("uart1:",dict_data['X'],dict_data['Y'],dict_data['Z'])
+                break
 
+def ready2play(E):
+    set_point(0,174,-45,E)
 
-def playb(flag,E,T):
-    if flag == 1:
-        set_point(1,-5,280,play_down_b,E)
-        time.sleep_ms(T*250)
-        set_point(1,-5,250,play_ready,E)
-        time.sleep_ms(100)
-    elif flag == 2:
-        set_point(2,-4,220,play_down_b+10,E)
-        time.sleep_ms(T*250)
-        set_point(2,-4,220,play_ready,E)
-        time.sleep_ms(100)
+def play(E,T):
+    set_point(0,174,play_down_w,E)
+    time.sleep_ms(T*150)
+    set_point(0,174,-45,E)
+    time.sleep_ms(100)
+    # print("play")
+
+def playb(E,T):
+    set_point(0,220,play_down_b,E)
+    time.sleep_ms(T*150)
+    set_point(0,220,-35,E)
+    time.sleep_ms(100)
+    # print("play")
 
 
 
 def home_seting():
-    flag_a=0
-    flag_b=0
-    data_to_send = "G28\r\n"
-    print(data_to_send)
-    uart1.write(data_to_send)
-    uart2.write(data_to_send)
-    while(True):
-        if uart1.any():
-            print(uart1.read())
-            flag_a=1
-            # break
-        if uart2.any():
-            print(uart2.read())
-            flag_b=1
-            # break
-        if flag_a and flag_b:
-            break
+   data_to_send = "G28\r\n"
+   print(data_to_send)
+   uart.write(data_to_send)
+   while(True):
+    if uart.any():
+        print(uart.read())
+        break
 
 
-def go2point(flag,X,Y,Z,E):
-    set_point(flag,X,Y,Z,E)
-    print(flag,X,Y,Z,E)
+def go2point(X,Y,Z,E):
+    set_point(X,Y,Z,E)
+    print(X,Y,Z,E)
 
-def playpiano_1():
-    distn = 0
-    distl = 0
-    for i in range(len(pitches)):
-        for index in range(len(piano_map_list_2)):
-            if pitches[i] in high:
-                if pitches[i] == piano_map_list_2[index]:
-                    distl = distn
-                    distn = int((piano_map_disE_list_mm[index])/2)
-                    distall = distn - distl
-                    print(distall)
-                    if distall >= -10:
-                        print("run1")
-                        go2point(2,-4,200,play_ready,E=int(100)/2)
-                        dish = int((piano_map_disE_list_mm[index]-(key_len*20))/2)
-                        if dish < 0 :
-                            dish = 200
-                        go2point(1,-5,250,play_ready,E=dish)
-                        if index in black_key:
-                            playb(1,E=int((piano_map_disE_list_mm[index]-(key_len*20))/2),T=int(durations[i]))
-                            # time.sleep_ms(1000)
-                            break
-                        else:
-                            play(1,E=int((piano_map_disE_list_mm[index]-(key_len*20))/2),T=int(durations[i]))
-                            # time.sleep_ms(1000)
-                            break
-
-                    else:
-                        print("run2")
-                        go2point(1,-4,250,play_ready,E=int(400)/2)
-                        go2point(2,-4,200,play_ready,E=int((piano_map_disE_list_mm[index]-(key_len*11))/2))
-                        if index in black_key:
-                            playb(2,E=int((piano_map_disE_list_mm[index]-(key_len*11))/2),T=int(durations[i]))
-                            # time.sleep_ms(1000)
-                            break
-                        else:
-                            play(2,E=int((piano_map_disE_list_mm[index]-(key_len*11))/2),T=int(durations[i]))
-                            # time.sleep_ms(1000)
-                            break
+def playpiano(number):
+    pitches_now = pitches[number]
+    for index in range(len(piano_map_list_2)):
+        if pitches_now == piano_map_list_2[index]:
+            go2point(0,200,play_ready,E=int((piano_map_disE_list_mm[index]-(key_len*11))/2))
+            if index in black_key:
+                # time.sleep_ms(1000)
+                playb(E=int((piano_map_disE_list_mm[index]-(key_len*11))/2),T=int(durations[number]))
+                data_to_send = b"OVER"
+                send_packet(uart2, data_to_send)
+                time.sleep_ms(100)
+                break
             else:
-                if pitches[i] == piano_map_list_2[index]:
-                    print("run3")
-                    go2point(1,-4,250,play_ready,E=int(400)/2)
-                    dst = int((piano_map_disE_list_mm[index]-(key_len*11))/2)
-                    if dst < 0 :
-                        dst = 50
-                    go2point(2,-4,200,play_ready,E=dst)
-                    if index in black_key:
-                        playb(2,E=int((piano_map_disE_list_mm[index]-(key_len*11))/2),T=int(durations[i]))
-                        # time.sleep_ms(1000)
-                        break
-                    else:
-                        play(2,E=int((piano_map_disE_list_mm[index]-(key_len*11))/2),T=int(durations[i]))
-                        # time.sleep_ms(1000)
-                        break
+                # time.sleep_ms(1000)
+                play(E=int((piano_map_disE_list_mm[index]-(key_len*11))/2),T=int(durations[number]))
+                data_to_send = b"OVER"
+                send_packet(uart2, data_to_send)
+                time.sleep_ms(100)
+                break
+
+# playpiano()
+# home_seting()
+
+set_point(0,200,play_ready,0)
 
 
+while True:
+    while True:
+        if receiver.process(uart2):
+            content = 0
+            received_data = receiver.packet
+            receiver.reset()
+            content = int(received_data.decode('utf-8'))  # 结果：'999'
+            print(content)    
+            if content != None and content<=len(pitches):
+                playpiano(content)
+                break
+            elif  content == 999:
+                go2point(0,200,play_ready,E=int(100)/2)
+                data_to_send = b"OVER"
+                send_packet(uart2, data_to_send)
+                time.sleep_ms(100)
+                break
+set_point(0,174,120,0)
 
-home_seting()
-set_point(1,-5,200,play_ready,0)
-set_point(2,-4,200,play_ready,0)
-time.sleep_ms(1000)
-
-
-playpiano_1()
-
-set_point(1,-5,200,play_ready,0)
-set_point(2,-4,200,play_ready,0)
 while True: 
     clock.tick()  # Update the FPS clock.
     img = sensor.snapshot()  # Take a picture and return the image.
-    # print(clock.fps())  # Note: OpenMV Cam runs about half as fast when connected
+    print(clock.fps())  # Note: OpenMV Cam runs about half as fast when connected
+    # to the IDE. The FPS should increase once disconnected.    

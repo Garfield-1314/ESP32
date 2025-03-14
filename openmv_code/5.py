@@ -1,87 +1,40 @@
-# 假设你已经将 XML 数据以文本方式存储在文件中
-# 下面是读取文件并打印音高与时值的代码
+# 定义转换函数
+def convert_note_to_weight(note):
+    num_index = 0
+    # 找到数字部分的起始位置
+    while num_index < len(note) and not note[num_index].isdigit():
+        num_index += 1
+    
+    # 分离字母/升号和数字部分
+    note_part = note[:num_index]
+    number = int(note[num_index:]) if num_index < len(note) else 0
+    
+    # 计算字母权值 (A=1, B=2,...)
+    letter = note_part[0].upper()
+    letter_value = ord(letter) - ord('A') + 1
+    
+    # 检查升号
+    sharp = 1 if '#' in note_part else 0
+    
+    return letter_value + sharp + number
 
-# 打开 MusicXML 文件（在 OpenMV 中，文件应当放置在 sd 卡或者文件系统中）
-try:
-    with open('far memory.xml', 'r') as file:  # 请确保路径正确
-        xml_content = file.read()
-except Exception as e:
-    print("无法打开文件:", e)
-    xml_content = ''
+# 原始输入数据（OpenMV兼容的元组格式）
+piano_map_list_2 = [
+    "A0", "A#0", "B0",
+    "C1", "C#1", "D1", "D#1", "E1", "F1", "F#1", "G1", "G#1", "A1", "A#1", "B1",    # C1
+    "C2", "C#2", "D2", "D#2", "E2", "F2", "F#2", "G2", "G#2", "A2", "A#2", "B2",      # C2
+    "C3", "C#3", "D3", "D#3", "E3", "F3", "F#3", "G3", "G#3", "A3", "A#3", "B3",      # C3
+    "C4", "C#4", "D4", "D#4", "E4", "F4", "F#4", "G4", "G#4", "A4", "A#4", "B4",      # C4
+    "C5", "C#5", "D5", "D#5", "E5", "F5", "F#5", "G5", "G#5", "A5", "A#5", "B5",      # C5
+    "C6", "C#6", "D6", "D#6", "E6", "F6", "F#6", "G6", "G#6", "A6", "A#6", "B6",      # C6
+    "C7", "C#7", "D7", "D#7", "E7", "F7", "F#7", "G7", "G#7", "A7", "A#7", "B7",      # C7
+    "C8"                                                                              # C8
+]
 
-# 简单的字符串处理来解析音符和时值
-# 这个方法相对简单，不如 XML 解析器强大，但能在 OpenMV 上工作
+# 转换所有音符
+result = []
+for note in piano_map_list_2:
+    result.append(convert_note_to_weight(note))
 
-pitches = []
-durations = []
-
-# 用来存储高音和低音及其时值
-high = []
-low = []
-high_durations = []
-low_durations = []
-
-if xml_content:
-    # 查找所有音符的音高和时值
-    start_index = 0
-    while True:
-        # 查找音符的 pitch 和 duration 标签
-        pitch_start = xml_content.find('<pitch>', start_index)
-        if pitch_start == -1:
-            break
-        pitch_end = xml_content.find('</pitch>', pitch_start)
-        pitch_data = xml_content[pitch_start + 7:pitch_end]
-        
-        # 获取音高的 step, octave 和 alter
-        step_start = pitch_data.find('<step>') + 6
-        step_end = pitch_data.find('</step>', step_start)
-        step = pitch_data[step_start:step_end]
-        
-        octave_start = pitch_data.find('<octave>') + 8
-        octave_end = pitch_data.find('</octave>', octave_start)
-        octave = int(pitch_data[octave_start:octave_end])
-        
-        alter_start = pitch_data.find('<alter>') + 7
-        alter_end = pitch_data.find('</alter>', alter_start)
-        alter = pitch_data[alter_start:alter_end] if alter_start != -1 else None
-        
-        # 处理音高
-        alter_sign = '#' if alter == '1' else 'b' if alter == '-1' else ''
-        pitch_info = f"{step}{alter_sign}{octave}"
-        pitches.append(pitch_info)
-
-        # 查找音符的 duration
-        duration_start = xml_content.find('<duration>', pitch_end) + 10
-        duration_end = xml_content.find('</duration>', duration_start)
-        duration = xml_content[duration_start:duration_end]
-        durations.append(duration)
-
-        # 根据音高的音阶判断高音或低音
-        if octave >= 4:  # 认为 C5 及以上是高音
-            high.append(pitch_info)
-            high_durations.append(duration)
-        elif octave < 4:  # 认为 C3 及以下是低音
-            low.append(pitch_info)
-            low_durations.append(duration)
-
-        # 更新索引，继续查找下一个音符
-        start_index = pitch_end + 1
-
-# 打印音高、时值，高音、低音及其时值
-print("所有音高:")
-print(pitches)
-
-print("\n所有时值:")
-print(durations)
-
-print("\n高音:")
-print(high)
-
-print("\n低音:")
-print(low)
-
-print("\n高音对应的时值:")
-print(high_durations)
-
-print("\n低音对应的时值:")
-print(low_durations)
+# 打印结果（OpenMV通过串口输出）
+print("Converted weights:", result)
