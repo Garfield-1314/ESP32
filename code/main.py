@@ -11,9 +11,9 @@ sensor.set_framesize(sensor.QVGA)  # Set frame size to QVGA (320x240)
 sensor.skip_frames(time=20)  # Wait for settings take effect.
 clock = time.clock()  # Create a clock object to track the FPS.
 # UART 3, and baudrate.
-uart2 = UART(1, 115200, timeout_char=1)
+uart2 = UART(1, 115200, timeout_char=5)
 
-uart1 = UART(3, 115200, timeout_char=1)
+uart1 = UART(3, 115200, timeout_char=5)
 
 receiver = datas.PacketReceiver()
 
@@ -48,15 +48,15 @@ def set_point(X,Y,Z,E):
     while(True):
         uart1.write(data_to_send)
         time.sleep_ms(100)
+        # print('amount')
         if uart1.any():
-            # time.sleep_ms(200)
             data1 = uart1.read()  # 读取所有可用数据
-            if (b'MOVE' in data1):
-                print('data1:',data1)
-                # dict_data, list_data = parse_gcode_move(data1)
-                # if dict_data['X']!=0 or dict_data['Y']!=0 or dict_data['Z']!=0:
-                    # print("uart1:",dict_data['X'],dict_data['Y'],dict_data['Z'])
-                break
+            # if (b'INFO' in data1):
+            print('data1:',data1)
+            # dict_data, list_data = parse_gcode_move(data1)
+            # if dict_data['X']!=0 or dict_data['Y']!=0 or dict_data['Z']!=0:
+                # print("uart1:",dict_data['X'],dict_data['Y'],dict_data['Z'])
+            break
 
 def ready2play(E):
     set_point(0,174,-45,E)
@@ -97,53 +97,56 @@ def playpiano(number):
         if pitches_now == config.piano_map_list_2[index]:
             go2point("G",0,number,-4,200,play_ready,E=int((config.piano_map_disE_list_mm[index]-(config.key_len*11))/2))
             if index in config.black_key:
-                time.sleep_ms(1000)
-                # playb(E=int((config.piano_map_disE_list_mm[index]-(config.key_len*11))/2),T=int(durations[number]))
+                # time.sleep_ms(1000)
+                playb(E=int((config.piano_map_disE_list_mm[index]-(config.key_len*11))/2),T=int(durations[number]))
                 data_to_send = b"OVER"
-                for i in range(3):
-                    datas.send_packet(uart2, data_to_send)
-                    time.sleep_ms(100)
+                datas.send_packet(uart2, data_to_send)
+                # time.sleep_ms(100)
                 break
             else:
-                time.sleep_ms(1000)
-                # play(E=int((config.piano_map_disE_list_mm[index]-(config.key_len*11))/2),T=int(durations[number]))
+                # time.sleep_ms(1000)
+                play(E=int((config.piano_map_disE_list_mm[index]-(config.key_len*11))/2),T=int(durations[number]))
                 data_to_send = b"OVER"
-                for i in range(3):
-                    datas.send_packet(uart2, data_to_send)
-                    time.sleep_ms(100)
+                datas.send_packet(uart2, data_to_send)
+                # time.sleep_ms(100)
                 break
 
 # playpiano()
-# home_seting()
+home_seting()
 
 set_point(0,200,play_ready,0)
 
 content_last = 0
 flap = 1
 while True:
-    if receiver.process(uart2):
-        content = 0
-        received_data = receiver.packet
-        content = int(received_data.decode('utf-8'))  # 结果：'999'
-        if content != content_last:
-            if content != None and content<=len(pitches):
-                playpiano(content)
-            elif  content == 999:
-                go2point("G",0,0,-4,200,play_ready,E=int(100)/2)
-                data_to_send = b"OVER"
-                for i in range(3):
-                    datas.send_packet(uart2, data_to_send)
-                    time.sleep_ms(100)
-            content_last = content
-            flap = 1
+    while True:
+        # time.sleep_ms(100)
+        # print('amount7')
+        if receiver.process(uart2):
+            # print('amount2')
+            content = 0
+            received_data = receiver.packet
+            content = int(received_data.decode('utf-8'))  # 结果：'999'
+            break
+    if content != content_last:
+        if content != None and content<=len(pitches):
+            playpiano(content)
         elif  content == 999:
-            if flap == 1:
-                go2point("K",0,0,-4,200,play_ready,E=int((config.piano_map_disE_list_mm[20]-(config.key_len*11))/2))
-                flap = 0
+            go2point("G",0,0,-4,200,play_ready,E=int(100)/2)
             data_to_send = b"OVER"
-            for i in range(3):
-                datas.send_packet(uart2, data_to_send)
-                time.sleep_ms(100)
+            datas.send_packet(uart2, data_to_send)
+            # time.sleep_ms(100)
+        content_last = content
+        flap = 1
+    if  content == 999:
+        # print('amount3')
+        if flap == 1:
+            go2point("K",0,0,-4,200,play_ready,E=int((config.piano_map_disE_list_mm[20]-(config.key_len*11))/2))
+            flap = 0
+        data_to_send = b"OVER"
+        content_last = content
+        datas.send_packet(uart2, data_to_send)
+        # time.sleep_ms(100)
 set_point(0,174,120,0)
 
 while True: 
