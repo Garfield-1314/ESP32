@@ -14,7 +14,6 @@
 #     "C8"                                                                            #C8
 # ]
 
-
 piano_map_list_2 = [
     "A0", "A#0", "B0",
     "C1", "C#1", "D1", "D#1", "E1", "F1", "F#1", "G1", "G#1", "A1", "A#1", "B1",    # C1
@@ -146,3 +145,95 @@ piano_map_disE_list_mm = [
     # 最高音C₈（键88）
     key_len*51  # 88. C₈ (白键)
 ]
+
+P1 = [5, 4, 3, 4, 3, 4, 3, 4, 4, 4, 3, 4, 3, 5, 4, 5, 3, 4, 3, 4, 2, 6, 3, 4, 2, 2, 3, 5, 2, 2, 3, 5, 3, 4, 3, 4, 3, 4, 5, 4, 4, 4, 3, 4, 3, 5, 4, 5]
+
+P1M = ['A4', 'B4', 'R', 'R', 'R', 'C5', 'B4', 
+        'C5', 'E5', 'B4', 'R', 'E4', 'A4', 'G4', 'A4', 'C5', 
+        'G4', 'R', 'E4', 'F4', 'E4', 'F4', 'C5', 'E4', 'R',
+        'C5', 'B4', 'F#4', 'F#4', 'B4', 'B4', 'R', 'A4',
+        'B4', 'C5', 'B4', 'C5', 'E5', 'B4', 'R', 'E4', 
+        'A4', 'G4', 'A4', 'C5', 'G4', 'R', 'E4', 'F4', 
+        'C5', 'B4', 'B4', 'C5', 'D5', 'E5', 'C5', 'C5', 'C5',
+        'B4', 'A4', 'B4', 'G#4', 'A4', 'C5', 'D5', 'E5',
+        'D5', 'E5', 'G5', 'D5', 'R', 'G4', 'C5', 'B4', 'C5', 
+        'E5', 'E5', 'R', 'A4', 'B4', 'C5', 'B4', 'C5', 'D5', 
+        'C5', 'G4', 'G4', 'F5', 'E5', 'D5', 'C5', 'E5', 'E5', 
+        'A5', 'G5', 'E5', 'D5', 'C5', 'D5', 'C5', 'D5', 'D5', 
+        'G5', 'E5', 'E5', 'A5', 'G5', 'E5', 'D5', 'C5', 'D5', 
+        'C5', 'D5', 'D5', 'B4', 'A4', 'A4', 'B4', 'C5', 'B4', 
+        'C5', 'E5', 'B4', 'R', 'E4', 'A4', 'G4', 'A4', 'C5', 
+        'G4', 'R', 'E4', 'F4', 'E4', 'F4', 'C5', 'E4', 'E4', 
+        'C5', 'R', 'R', 'B4', 'F#4', 'F#4', 'B4', 'B4', 'R', 
+        'A4', 'B4', 'C5', 'B4', 'C5', 'E5', 'B4', 'R', 'E4', 
+        'A4', 'G4', 'A4', 'C5', 'G4', 'R', 'E4', 'F4', 'C5', 
+        'B4', 'B4', 'C5', 'D5', 'E5', 'C5', 'C5', 'C5', 'B4', 
+        'A4', 'B4', 'G#4']
+
+P1N = ['eighth', 'eighth', 'quarter', 'quarter', 'quarter', 
+        'quarter', 'eighth', 'quarter', 'quarter', 'half', 'quarter', 
+        'quarter', 'quarter', 'eighth', 'quarter', 'quarter', 'half', 
+        'quarter', 'quarter', 'quarter', 'eighth', 'quarter', 'quarter', 
+        'half', 'quarter', 'quarter', 'quarter', 'eighth', 'quarter', 
+        'quarter', 'half', 'quarter', 'eighth', 'eighth', 'quarter', 
+        'eighth', 'quarter', 'quarter', 'half', 'quarter', 'quarter', 
+        'quarter', 'eighth', 'quarter', 'quarter', 'half', 'quarter', 
+        'quarter', 'quarter', 'eighth', 'eighth', 'quarter', 'quarter', 
+        'quarter', 'eighth', 'eighth', 'half', 'eighth', 'eighth', 'quarter', 
+        'quarter', 'quarter', 'half', 'eighth', 'eighth', 'quarter', 'eighth',
+        'quarter', 'quarter', 'half', 'quarter', 'quarter', 'quarter', 
+        'eighth', 'quarter', 'quarter', 'half', 'quarter', 'eighth', 'eighth', 
+        'quarter', 'eighth', 'eighth', 'quarter', 'quarter', 'eighth', 'half', 
+        'quarter', 'quarter', 'quarter', 'quarter', 'half', 'quarter', 'half', 
+        'half', 'eighth', 'eighth', 'half', 'quarter', 'eighth', 'eighth', 
+        'quarter', 'quarter', 'half', 'quarter', 'half', 'half', 'eighth', 
+        'eighth', 'half', 'quarter', 'eighth', 'eighth', 'quarter', 'quarter',
+        'half', 'eighth', 'eighth', 'quarter', 'eighth', 'quarter', 'quarter', 
+        'half', 'quarter', 'quarter', 'quarter', 'eighth', 'quarter', 'quarter',
+        'half', 'quarter', 'quarter', 'quarter', 'eighth', 'quarter', 'quarter', 
+        'half', 'quarter', 'quarter', 'eighth', 'eighth', 'quarter', 'eighth', 
+        'quarter', 'quarter', 'half', 'quarter', 'eighth', 'eighth', 'quarter',
+        'eighth', 'quarter', 'quarter', 'half', 'quarter', 'quarter', 'quarter',
+            'eighth', 'quarter', 'quarter', 'half', 'quarter', 'quarter', 'quarter', 
+            'eighth', 'eighth', 'quarter', 'quarter', 'quarter', 'eighth', 'eighth',
+            'half', 'eighth', 'eighth', 'quarter', 'quarter', 'quarter']
+
+
+
+P2 = [4, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 3, 4, 3, 3, 3, 3, 3, 3, 3, 4, 3, 4, 4, 4, 3, 4, 4, 4, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 3, 4]
+
+P2M = ['R', 'R', 'R', 'R', 'A3', 'C4', 'E4', 'E3', 'G3', 'B3', 'F3', 
+        'A3', 'C4', 'C3', 'E3', 'G3', 'D3', 'F3', 'A3', 'A2', 'C3', 'E3', 'B2',
+        'D#3', 'F#3', 'E3', 'G#3', 'B3', 'A3', 'C4', 'E4', 'E3', 'G3', 'B3',
+        'F3', 'A3', 'C4', 'C3', 'E3', 'G3', 'D3', 'F3', 'A3', 'F3', 'A2', 'C3', 
+        'E3', 'D3', 'A3', 'E3', 'B3', 'A2', 'C3', 'E3', 'C3', 'E3', 'G3', 'G2', 
+        'B2', 'D3', 'A2', 'C3', 'E3', 'E2', 'G2', 'B2', 'F2', 'A2', 'C3', 'C3', 
+        'E3', 'G3', 'D3', 'F3', 'A3', 'F3', 'E3', 'G#3', 'B3', 'A3', 'C4', 'E4', 
+        'C4', 'F3', 'A3', 'C4', 'A3', 'G3', 'B3', 'D4', 'B3', 'C3', 'E3', 'G3',
+        'A2', 'C3', 'E3', 'C3', 'F2', 'A2', 'C3', 'A2', 'G2', 'B2', 'D3', 'B2', 
+        'A2', 'C3', 'E3', 'A3', 'C4', 'E4', 'E3', 'G3', 'B3', 'F3', 'A3', 'C4',
+        'C3', 'E3', 'G3', 'D3', 'F3', 'A3', 'A2', 'C3', 'E3', 'B2', 'D#3', 'F#3',
+        'E3', 'G#3', 'B3', 'A3', 'C4', 'E4', 'E3', 'G3', 'B3', 'F3', 'A3', 'C4', 
+        'C3', 'E3', 'G3', 'D3', 'F3', 'A3', 'F3', 'A2', 'C3', 'E3', 'D3', 'A3',
+        'E3', 'B3']
+
+P2N = ['quarter', 'quarter', 'quarter', 'quarter', 'quarter', 'quarter', 'half', 
+'quarter', 'quarter', 'half', 'quarter', 'quarter', 'half', 'quarter', 'quarter', 
+'half', 'quarter', 'quarter', 'half', 'quarter', 'quarter', 'half', 'quarter', 
+'quarter', 'half', 'quarter', 'quarter', 'half', 'quarter', 'quarter', 'half', 
+'quarter', 'quarter', 'half', 'quarter', 'quarter', 'half', 'quarter', 'quarter',
+ 'half', 'quarter', 'quarter', 'quarter', 'quarter', 'quarter', 'quarter', 'half', 
+ 'quarter', 'quarter', 'quarter', 'quarter', 'quarter', 'quarter', 'half', 'quarter', 
+ 'quarter', 'half', 'quarter', 'quarter', 'half', 'quarter', 'quarter', 'half',
+  'quarter', 'quarter', 'half', 'quarter', 'quarter', 'half', 'quarter', 'quarter', 
+  'half', 'quarter', 'quarter', 'quarter', 'quarter', 'quarter', 'quarter', 'half',
+   'quarter', 'quarter', 'quarter', 'quarter', 'quarter', 'quarter', 'quarter', 
+   'quarter', 'quarter', 'quarter', 'quarter', 'quarter', 'quarter', 'quarter', 
+   'half', 'quarter', 'quarter', 'quarter', 'quarter', 'quarter', 'quarter', 
+   'quarter', 'quarter', 'quarter', 'quarter', 'quarter', 'quarter', 'quarter', 
+   'quarter', 'half', 'quarter', 'quarter', 'half', 'quarter', 'quarter', 'half',
+    'quarter', 'quarter', 'half', 'quarter', 'quarter', 'half', 'quarter', 'quarter', 
+    'half', 'quarter', 'quarter', 'half', 'quarter', 'quarter', 'half', 'quarter', 
+    'quarter', 'half', 'quarter', 'quarter', 'half', 'quarter', 'quarter', 'half', 
+    'quarter', 'quarter', 'half', 'quarter', 'quarter', 'half', 'quarter', 'quarter', 
+    'quarter', 'quarter', 'quarter', 'quarter', 'half', 'quarter', 'quarter', 'quarter', 'quarter']

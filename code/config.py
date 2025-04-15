@@ -1,41 +1,18 @@
-pitches2 = ['A4', 'B4', 'C5', 'B4', 'C5', 'E5', 'B4', 'E4', 'A4', 'G4', 'A4', 'C5', 'G4', 'E4', 'F4', 'E4', 
-'F4', 'C5', 'E4', 'C5', 'B4', 'F#4', 'F#4', 'B4', 'B4', 'A4', 'B4', 'C5', 'B4', 'C5', 'E5', 'B4', 
-'E4', 'A4', 'G4', 'A4', 'C5', 'G4', 'E4', 'F4', 'C5', 'B4', 'B4', 'C5', 'D5', 'E5', 'C5', 'C5', 'C5', 
-'B4', 'A4', 'B4', 'G#4', 'A4', 'C5', 'D5', 'E5', 'D5', 'E5', 'G5', 'D5', 'G4', 'C5', 'B4', 'C5', 'E5', 
-'E5', 'A4', 'B4', 'C5', 'B4', 'C5', 'D5', 'C5', 'G4', 'G4', 'F5', 'E5', 'D5', 'C5', 'E5', 'E5', 'A5',
-'G5', 'E5', 'D5', 'C5', 'D5', 'C5', 'D5', 'D5', 'G5', 'E5', 'E5', 'A5', 'G5', 'E5', 'D5', 'C5', 'D5', 
-'C5', 'D5', 'D5', 'B4', 'A4', 'A4', 'B4', 'C5', 'B4', 'C5', 'E5', 'B4', 'E4', 'A4', 'G4', 'A4', 'C5', 
-'G4', 'E4', 'F4', 'E4', 'F4', 'C5', 'E4', 'E4', 'C5', 'B4', 'F#4', 'F#4', 'B4', 'B4', 'A4', 'B4', 'C5',
-'B4', 'C5', 'E5', 'B4', 'E4', 'A4', 'G4', 'A4', 'C5', 'G4', 'E4', 'F4', 'C5', 'B4', 'B4', 'C5', 'D5',
-'E5', 'C5', 'C5', 'C5', 'B4', 'A4', 'B4', 'G#4', 'A3', 'C4', 'E4', 'E3', 'G3', 'B3', 'F3', 'A3', 'C4', 
-'C3', 'E3', 'G3', 'D3', 'F3', 'A3', 'A2', 'C3', 'E3', 'B2', 'D#3', 'F#3', 'E3', 'G#3', 'B3', 'A3', 'C4', 
-'E4', 'E3', 'G3', 'B3', 'F3', 'A3', 'C4', 'C3', 'E3', 'G3', 'D3', 'F3', 'A3', 'F3', 'A2', 'C3', 'E3', 
-'D3', 'A3', 'E3', 'B3', 'A2', 'C3', 'E3', 'C3', 'E3', 'G3', 'G2', 'B2', 'D3', 'A2', 'C3', 'E3', 'E2',
-'G2', 'B2', 'F2', 'A2', 'C3', 'C3', 'E3', 'G3', 'D3', 'F3', 'A3', 'F3', 'E3', 'G#3', 'B3', 'A3', 'C4',
-'E4', 'C4', 'F3', 'A3', 'C4', 'A3', 'G3', 'B3', 'D4', 'B3', 'C3', 'E3', 'G3', 'A2', 'C3', 'E3', 'C3',
-'F2', 'A2', 'C3', 'A2', 'G2', 'B2', 'D3', 'B2', 'A2', 'C3', 'E3', 'A3', 'C4', 'E4', 'E3', 'G3', 'B3', 'F3', 
-'A3', 'C4', 'C3', 'E3', 'G3', 'D3', 'F3', 'A3', 'A2', 'C3', 'E3', 'B2', 'D#3', 'F#3', 'E3', 'G#3', 'B3', 'A3', 
-'C4', 'E4', 'E3', 'G3', 'B3', 'F3', 'A3', 'C4', 'C3', 'E3', 'G3', 'D3', 'F3', 'A3', 'F3', 'A2', 'C3', 'E3', 
-'D3', 'A3', 'E3', 'B3']
-
-
-
 
 #钢琴长122.5cm
 #白键52个
 #黑键36个
-piano_map_list = [
-    "A0", "Bb0", "B0",
-    "C1", "Db1", "D1", "Eb1", "E1", "F1", "Gb1", "G1", "Ab1", "A1", "Bb1", "B1",    #C1
-    "C2", "Db2", "D2", "Eb2", "E2", "F2", "Gb2", "G2", "Ab2", "A2", "Bb2", "B2",    #C2  
-    "C3", "Db3", "D3", "Eb3", "E3", "F3", "Gb3", "G3", "Ab3", "A3", "Bb3", "B3",    #C3
-    "C4", "Db4", "D4", "Eb4", "E4", "F4", "Gb4", "G4", "Ab4", "A4", "Bb4", "B4",    #C4
-    "C5", "Db5", "D5", "Eb5", "E5", "F5", "Gb5", "G5", "Ab5", "A5", "Bb5", "B5",    #C5
-    "C6", "Db6", "D6", "Eb6", "E6", "F6", "Gb6", "G6", "Ab6", "A6", "Bb6", "B6",    #C6
-    "C7", "Db7", "D7", "Eb7", "E7", "F7", "Gb7", "G7", "Ab7", "A7", "Bb7", "B7",    #C7
-    "C8"                                                                            #C8
-]
-
+# piano_map_list = [
+#     "A0", "Bb0", "B0",
+#     "C1", "Db1", "D1", "Eb1", "E1", "F1", "Gb1", "G1", "Ab1", "A1", "Bb1", "B1",    #C1
+#     "C2", "Db2", "D2", "Eb2", "E2", "F2", "Gb2", "G2", "Ab2", "A2", "Bb2", "B2",    #C2  
+#     "C3", "Db3", "D3", "Eb3", "E3", "F3", "Gb3", "G3", "Ab3", "A3", "Bb3", "B3",    #C3
+#     "C4", "Db4", "D4", "Eb4", "E4", "F4", "Gb4", "G4", "Ab4", "A4", "Bb4", "B4",    #C4
+#     "C5", "Db5", "D5", "Eb5", "E5", "F5", "Gb5", "G5", "Ab5", "A5", "Bb5", "B5",    #C5
+#     "C6", "Db6", "D6", "Eb6", "E6", "F6", "Gb6", "G6", "Ab6", "A6", "Bb6", "B6",    #C6
+#     "C7", "Db7", "D7", "Eb7", "E7", "F7", "Gb7", "G7", "Ab7", "A7", "Bb7", "B7",    #C7
+#     "C8"                                                                            #C8
+# ]
 
 piano_map_list_2 = [
     "A0", "A#0", "B0",
@@ -48,28 +25,6 @@ piano_map_list_2 = [
     "C7", "C#7", "D7", "D#7", "E7", "F7", "F#7", "G7", "G#7", "A7", "A#7", "B7",      # C7
     "C8"                                                                              # C8
 ]
-
-
-# 创建MIDI编号字典（预计算版，更节省内存）
-NOTE_MIDI_MAP = {
-    "A0":21, "A#0":22, "B0":23,
-    "C1":24, "C#1":25, "D1":26, "D#1":27, "E1":28, "F1":29, "F#1":30,
-    "G1":31, "G#1":32, "A1":33, "A#1":34, "B1":35,
-    "C2":36, "C#2":37, "D2":38, "D#2":39, "E2":40, "F2":41, "F#2":42,
-    "G2":43, "G#2":44, "A2":45, "A#2":46, "B2":47,
-    "C3":48, "C#3":49, "D3":50, "D#3":51, "E3":52, "F3":53, "F#3":54,
-    "G3":55, "G#3":56, "A3":57, "A#3":58, "B3":59,
-    "C4":60, "C#4":61, "D4":62, "D#4":63, "E4":64, "F4":65, "F#4":66,
-    "G4":67, "G#4":68, "A4":69, "A#4":70, "B4":71,
-    "C5":72, "C#5":73, "D5":74, "D#5":75, "E5":76, "F5":77, "F#5":78,
-    "G5":79, "G#5":80, "A5":81, "A#5":82, "B5":83,
-    "C6":84, "C#6":85, "D6":86, "D#6":87, "E6":88, "F6":89, "F#6":90,
-    "G6":91, "G#6":92, "A6":93, "A#6":94, "B6":95,
-    "C7":96, "C#7":97, "D7":98, "D#7":99, "E7":100, "F7":101, "F#7":102,
-    "G7":103, "G#7":104, "A7":105, "A#7":106, "B7":107,
-    "C8":108
-}
-
 
 black_key = [1,4,6,9,
             11,13,16,18,
@@ -191,6 +146,94 @@ piano_map_disE_list_mm = [
     key_len*51  # 88. C₈ (白键)
 ]
 
+P1 = [5, 4, 3, 4, 3, 4, 3, 4, 4, 4, 3, 4, 3, 5, 4, 5, 3, 4, 3, 4, 2, 6, 3, 4, 2, 2, 3, 5, 2, 2, 3, 5, 3, 4, 3, 4, 3, 4, 5, 4, 4, 4, 3, 4, 3, 5, 4, 5]
 
-def convert_notes(notes_list):
-    return [NOTE_MIDI_MAP[note] for note in notes_list]
+P1M = ['A4', 'B4', 'R', 'R', 'R', 'C5', 'B4', 
+        'C5', 'E5', 'B4', 'R', 'E4', 'A4', 'G4', 'A4', 'C5', 
+        'G4', 'R', 'E4', 'F4', 'E4', 'F4', 'C5', 'E4', 'R',
+        'C5', 'B4', 'F#4', 'F#4', 'B4', 'B4', 'R', 'A4',
+        'B4', 'C5', 'B4', 'C5', 'E5', 'B4', 'R', 'E4', 
+        'A4', 'G4', 'A4', 'C5', 'G4', 'R', 'E4', 'F4', 
+        'C5', 'B4', 'B4', 'C5', 'D5', 'E5', 'C5', 'C5', 'C5',
+        'B4', 'A4', 'B4', 'G#4', 'A4', 'C5', 'D5', 'E5',
+        'D5', 'E5', 'G5', 'D5', 'R', 'G4', 'C5', 'B4', 'C5', 
+        'E5', 'E5', 'R', 'A4', 'B4', 'C5', 'B4', 'C5', 'D5', 
+        'C5', 'G4', 'G4', 'F5', 'E5', 'D5', 'C5', 'E5', 'E5', 
+        'A5', 'G5', 'E5', 'D5', 'C5', 'D5', 'C5', 'D5', 'D5', 
+        'G5', 'E5', 'E5', 'A5', 'G5', 'E5', 'D5', 'C5', 'D5', 
+        'C5', 'D5', 'D5', 'B4', 'A4', 'A4', 'B4', 'C5', 'B4', 
+        'C5', 'E5', 'B4', 'R', 'E4', 'A4', 'G4', 'A4', 'C5', 
+        'G4', 'R', 'E4', 'F4', 'E4', 'F4', 'C5', 'E4', 'E4', 
+        'C5', 'R', 'R', 'B4', 'F#4', 'F#4', 'B4', 'B4', 'R', 
+        'A4', 'B4', 'C5', 'B4', 'C5', 'E5', 'B4', 'R', 'E4', 
+        'A4', 'G4', 'A4', 'C5', 'G4', 'R', 'E4', 'F4', 'C5', 
+        'B4', 'B4', 'C5', 'D5', 'E5', 'C5', 'C5', 'C5', 'B4', 
+        'A4', 'B4', 'G#4']
+
+P1N = ['eighth', 'eighth', 'quarter', 'quarter', 'quarter', 
+        'quarter', 'eighth', 'quarter', 'quarter', 'half', 'quarter', 
+        'quarter', 'quarter', 'eighth', 'quarter', 'quarter', 'half', 
+        'quarter', 'quarter', 'quarter', 'eighth', 'quarter', 'quarter', 
+        'half', 'quarter', 'quarter', 'quarter', 'eighth', 'quarter', 
+        'quarter', 'half', 'quarter', 'eighth', 'eighth', 'quarter', 
+        'eighth', 'quarter', 'quarter', 'half', 'quarter', 'quarter', 
+        'quarter', 'eighth', 'quarter', 'quarter', 'half', 'quarter', 
+        'quarter', 'quarter', 'eighth', 'eighth', 'quarter', 'quarter', 
+        'quarter', 'eighth', 'eighth', 'half', 'eighth', 'eighth', 'quarter', 
+        'quarter', 'quarter', 'half', 'eighth', 'eighth', 'quarter', 'eighth',
+        'quarter', 'quarter', 'half', 'quarter', 'quarter', 'quarter', 
+        'eighth', 'quarter', 'quarter', 'half', 'quarter', 'eighth', 'eighth', 
+        'quarter', 'eighth', 'eighth', 'quarter', 'quarter', 'eighth', 'half', 
+        'quarter', 'quarter', 'quarter', 'quarter', 'half', 'quarter', 'half', 
+        'half', 'eighth', 'eighth', 'half', 'quarter', 'eighth', 'eighth', 
+        'quarter', 'quarter', 'half', 'quarter', 'half', 'half', 'eighth', 
+        'eighth', 'half', 'quarter', 'eighth', 'eighth', 'quarter', 'quarter',
+        'half', 'eighth', 'eighth', 'quarter', 'eighth', 'quarter', 'quarter', 
+        'half', 'quarter', 'quarter', 'quarter', 'eighth', 'quarter', 'quarter',
+        'half', 'quarter', 'quarter', 'quarter', 'eighth', 'quarter', 'quarter', 
+        'half', 'quarter', 'quarter', 'eighth', 'eighth', 'quarter', 'eighth', 
+        'quarter', 'quarter', 'half', 'quarter', 'eighth', 'eighth', 'quarter',
+        'eighth', 'quarter', 'quarter', 'half', 'quarter', 'quarter', 'quarter',
+            'eighth', 'quarter', 'quarter', 'half', 'quarter', 'quarter', 'quarter', 
+            'eighth', 'eighth', 'quarter', 'quarter', 'quarter', 'eighth', 'eighth',
+            'half', 'eighth', 'eighth', 'quarter', 'quarter', 'quarter']
+
+
+
+P2 = [4, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 3, 4, 3, 3, 3, 3, 3, 3, 3, 4, 3, 4, 4, 4, 3, 4, 4, 4, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 3, 4]
+
+P2M = ['R', 'R', 'R', 'R', 'A3', 'C4', 'E4', 'E3', 'G3', 'B3', 'F3', 
+        'A3', 'C4', 'C3', 'E3', 'G3', 'D3', 'F3', 'A3', 'A2', 'C3', 'E3', 'B2',
+        'D#3', 'F#3', 'E3', 'G#3', 'B3', 'A3', 'C4', 'E4', 'E3', 'G3', 'B3',
+        'F3', 'A3', 'C4', 'C3', 'E3', 'G3', 'D3', 'F3', 'A3', 'F3', 'A2', 'C3', 
+        'E3', 'D3', 'A3', 'E3', 'B3', 'A2', 'C3', 'E3', 'C3', 'E3', 'G3', 'G2', 
+        'B2', 'D3', 'A2', 'C3', 'E3', 'E2', 'G2', 'B2', 'F2', 'A2', 'C3', 'C3', 
+        'E3', 'G3', 'D3', 'F3', 'A3', 'F3', 'E3', 'G#3', 'B3', 'A3', 'C4', 'E4', 
+        'C4', 'F3', 'A3', 'C4', 'A3', 'G3', 'B3', 'D4', 'B3', 'C3', 'E3', 'G3',
+        'A2', 'C3', 'E3', 'C3', 'F2', 'A2', 'C3', 'A2', 'G2', 'B2', 'D3', 'B2', 
+        'A2', 'C3', 'E3', 'A3', 'C4', 'E4', 'E3', 'G3', 'B3', 'F3', 'A3', 'C4',
+        'C3', 'E3', 'G3', 'D3', 'F3', 'A3', 'A2', 'C3', 'E3', 'B2', 'D#3', 'F#3',
+        'E3', 'G#3', 'B3', 'A3', 'C4', 'E4', 'E3', 'G3', 'B3', 'F3', 'A3', 'C4', 
+        'C3', 'E3', 'G3', 'D3', 'F3', 'A3', 'F3', 'A2', 'C3', 'E3', 'D3', 'A3',
+        'E3', 'B3']
+
+P2N = ['quarter', 'quarter', 'quarter', 'quarter', 'quarter', 'quarter', 'half', 
+'quarter', 'quarter', 'half', 'quarter', 'quarter', 'half', 'quarter', 'quarter', 
+'half', 'quarter', 'quarter', 'half', 'quarter', 'quarter', 'half', 'quarter', 
+'quarter', 'half', 'quarter', 'quarter', 'half', 'quarter', 'quarter', 'half', 
+'quarter', 'quarter', 'half', 'quarter', 'quarter', 'half', 'quarter', 'quarter',
+ 'half', 'quarter', 'quarter', 'quarter', 'quarter', 'quarter', 'quarter', 'half', 
+ 'quarter', 'quarter', 'quarter', 'quarter', 'quarter', 'quarter', 'half', 'quarter', 
+ 'quarter', 'half', 'quarter', 'quarter', 'half', 'quarter', 'quarter', 'half',
+  'quarter', 'quarter', 'half', 'quarter', 'quarter', 'half', 'quarter', 'quarter', 
+  'half', 'quarter', 'quarter', 'quarter', 'quarter', 'quarter', 'quarter', 'half',
+   'quarter', 'quarter', 'quarter', 'quarter', 'quarter', 'quarter', 'quarter', 
+   'quarter', 'quarter', 'quarter', 'quarter', 'quarter', 'quarter', 'quarter', 
+   'half', 'quarter', 'quarter', 'quarter', 'quarter', 'quarter', 'quarter', 
+   'quarter', 'quarter', 'quarter', 'quarter', 'quarter', 'quarter', 'quarter', 
+   'quarter', 'half', 'quarter', 'quarter', 'half', 'quarter', 'quarter', 'half',
+    'quarter', 'quarter', 'half', 'quarter', 'quarter', 'half', 'quarter', 'quarter', 
+    'half', 'quarter', 'quarter', 'half', 'quarter', 'quarter', 'half', 'quarter', 
+    'quarter', 'half', 'quarter', 'quarter', 'half', 'quarter', 'quarter', 'half', 
+    'quarter', 'quarter', 'half', 'quarter', 'quarter', 'half', 'quarter', 'quarter', 
+    'quarter', 'quarter', 'quarter', 'quarter', 'half', 'quarter', 'quarter', 'quarter', 'quarter']

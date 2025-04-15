@@ -14,37 +14,35 @@ clock = time.clock()  # Create a clock object to track the FPS.
 uart2 = UART(1, 115200, timeout_char=5)
 
 uart1 = UART(3, 115200, timeout_char=5)
-
+    
 receiver = datas.PacketReceiver()
 
-from musicxml_parser import parse_musicxml
 
+print(config.P2)
+measure = len(config.P2)
+print(config.P2M)
+print(config.P2N)
 
-file_path = 'TKZZ.xml'# 解析 MusicXML 文件
-pitches, durations, high, low, high_durations, low_durations = parse_musicxml(file_path)
+N = 0
 
-# 打印结果
-print("所有音符:", pitches)
+for i in range(len(config.P2N)):
+    if config.P2N[i] == 'eighth':
+        config.P2N[i] = 1
+    elif config.P2N[i] == 'quarter':
+        config.P2N[i] = 2
+    elif config.P2N[i] == 'half':
+        config.P2N[i] = 4
+    
 
+print(config.P2N)
 
-map_midi_sequence = config.convert_notes(config.piano_map_list_2)
-print("map_midi_sequence:",map_midi_sequence)
-
-
-pitches_midi_sequence = config.convert_notes(pitches)
-print("pitches:",map_midi_sequence)
-
-piano_start_point_x = 0
-piano_start_point_y = 174
-piano_start_point_z = 120
-piano_start_point_e = 0
 
 play_ready=-30
-play_down_b=-70
-play_down_w=-75
+play_down_b=-55
+play_down_w=-65
 
-def set_point(X,Y,Z,E):
-    data_to_send = "G1 X{} Y{} Z{} E{}\r\n".format(X, Y, Z, E)
+def set_point(X,Y,Z,E,F):
+    data_to_send = "G1 X{} Y{} Z{} E{} F{}\r\n".format(X, Y, Z, E, F)
     while(True):
         uart1.write(data_to_send)
         time.sleep_ms(100)
@@ -59,23 +57,19 @@ def set_point(X,Y,Z,E):
             break
 
 def ready2play(E):
-    set_point(0,174,-45,E)
+    set_point(148,174,-15,E,150)
 
-def play(E,T):
-    set_point(0,174,play_down_w,E)
-    time.sleep_ms(T*150)
-    set_point(0,174,-45,E)
-    time.sleep_ms(100)
-    # print("play")
+def playw(E,T):
+    set_point(148,174,play_down_w+9,E,150)
+    time.sleep_ms(T*125)
+    set_point(148,174,-15,E,150)
+    time.sleep_ms(50)
 
 def playb(E,T):
-    set_point(0,220,play_down_b,E)
-    time.sleep_ms(T*150)
-    set_point(0,220,-35,E)
-    time.sleep_ms(100)
-    # print("play")
-
-
+    set_point(148,220,play_down_b+16,E,150)
+    time.sleep_ms(T*125)
+    set_point(148,220,-15,E,150)
+    time.sleep_ms(50)
 
 def home_seting():
    data_to_send = "G28\r\n"
@@ -87,77 +81,66 @@ def home_seting():
         break
 
 
-def go2point(strs,num,flag,X,Y,Z,E):
-    set_point(X,Y,Z,E)
-    print(strs,num,flag,X,Y,Z,E)
+def go2point(X,Y,Z,E):
+    set_point(X,Y,Z,E,0)
+    print(X,Y,Z,E,0)
 
-def playpiano(number):
-    pitches_now = config.pitches2[number]
-    for index in range(len(config.piano_map_list_2)):
-        if pitches_now == config.piano_map_list_2[index]:
-            go2point("G",0,number,-4,200,play_ready,E=int((config.piano_map_disE_list_mm[index]-(config.key_len*11))/2))
-            if index in config.black_key:
-                # time.sleep_ms(1000)
-                playb(E=int((config.piano_map_disE_list_mm[index]-(config.key_len*11))/2),T=int(durations[number]))
-                data_to_send = b"OVER"
-                datas.send_packet(uart2, data_to_send)
-                # time.sleep_ms(100)
-                break
-            else:
-                # time.sleep_ms(1000)
-                play(E=int((config.piano_map_disE_list_mm[index]-(config.key_len*11))/2),T=int(durations[number]))
-                data_to_send = b"OVER"
-                datas.send_packet(uart2, data_to_send)
-                # time.sleep_ms(100)
-                break
 
-# playpiano()
+def callback():
+    while True:
+        data_to_send = b"Get"
+        datas.send_packet(uart2, data_to_send)
+        time.sleep_ms(10)
+        if receiver.process(uart2):
+            print('content:',receiver.packet)
+            break 
+
+def playpiano():
+    num = 0
+    for i in range(measure):
+        print(i,config.P2[i])
+        time.sleep_ms(250)
+        # callback()
+        for p in range(config.P2[i]):
+            print(num,config.P2M[num],config.P2N[num])
+            if config.P2M[num] == "R":
+                go2point(148,174,play_ready,E=int(100)/2)
+                time.sleep_ms(config.P2N[num]*125)
+                time.sleep_ms(500)
+                print("sleep")
+            else :
+                for index in range(len(config.piano_map_list_2)):
+                    if config.P2M[num] == config.piano_map_list_2[index]:
+                        go2point(148,174,play_ready,E=int((config.piano_map_disE_list_mm[index]-(config.key_len*11))/2))
+                        if index in config.black_key:
+                            # time.sleep_ms(1000)
+                            playb(E=int((config.piano_map_disE_list_mm[index]-(config.key_len*11))/2),T=int(config.P2N[num]))
+                            break
+                        else:
+                            # time.sleep_ms(1000)
+                            playw(E=int((config.piano_map_disE_list_mm[index]-(config.key_len*11))/2),T=int(config.P2N[num]))
+                            break
+            num = num + 1
+
 home_seting()
 
-set_point(0,200,play_ready,0)
+for i in range(20):
+    time.sleep_ms(1000)
 
-content_last = 0
-flap = 1
 while True:
-    while True:
-        # time.sleep_ms(100)
-        # print('amount7')
-        if receiver.process(uart2):
-            # print('amount2')
-            content = 0
-            received_data = receiver.packet
-            content = int(received_data.decode('utf-8'))  # 结果：'999'
-            break
-    if content != content_last:
-        if content != None and content<=len(pitches):
-            playpiano(content)
-        elif  content == 999:
-            go2point("G",0,0,-4,200,play_ready,E=int(100)/2)
-            data_to_send = b"OVER"
-            datas.send_packet(uart2, data_to_send)
-            # time.sleep_ms(100)
-        content_last = content
-        flap = 1
-    if  content == 999:
-        # print('amount3')
-        if flap == 1:
-            go2point("K",0,0,-4,200,play_ready,E=int((config.piano_map_disE_list_mm[20]-(config.key_len*11))/2))
-            flap = 0
-        data_to_send = b"OVER"
-        content_last = content
-        datas.send_packet(uart2, data_to_send)
-        # time.sleep_ms(100)
-set_point(0,174,120,0)
+    data_to_send = b"Init OVER"
+    datas.send_packet(uart2, data_to_send)
+    time.sleep_ms(10)
+    if receiver.process(uart2):
+        if receiver.packet == bytearray(b"OK"):
+            print('content:',receiver.packet)
+            break 
 
-while True: 
-    time.sleep_ms(100)
-    # data_to_send = b"back"
-    # datas.send_packet(uart2, data_to_send)
-    # if receiver.process(uart2):
-    #     received_data = receiver.packet
-    #     receiver.reset()
-    #     content = received_data.decode('utf-8')  
-    #     print(content)
-    # clock.tick()  # Update the FPS clock.
-    # img = sensor.snapshot()  # Take a picture and return the image.
-    # print(clock.tick() ) 
+
+playpiano()
+
+
+set_point(0,174,120,0,0)
+
+
+
