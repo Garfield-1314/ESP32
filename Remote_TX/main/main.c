@@ -14,7 +14,7 @@ void app_main(void) {
     user_component_init();
     
     for(;;){
-        printf("App Main Initialized\n");
-        vTaskDelay(pdMS_TO_TICKS(1000));
+        lv_timer_handler();
+        vTaskDelay(pdMS_TO_TICKS(10));
     }
 }
