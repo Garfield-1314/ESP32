@@ -1,4 +1,4 @@
-description: LVGL Example
+description: Remote_TX main component
 dependencies:
     lvgl/lvgl: =*
     espressif/esp_tinyusb: "^1"
