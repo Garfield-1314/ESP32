@@ -1,4 +1,4 @@
 description: Remote_TX main component
 dependencies:
-    lvgl/lvgl: =*
+    lvgl/lvgl: ^8.4.0
     espressif/esp_tinyusb: "^1"
