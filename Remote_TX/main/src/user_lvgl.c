@@ -2,135 +2,110 @@
 #include "include/st7789.h"
 #include "include/gt911.h"
 #include "lvgl.h"
+#include "esp_timer.h"
+#include "esp_log.h"
+#include "esp_heap_caps.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
 
-// 定义LVGL缓冲区 (32字节对齐以适配Cache/DMA)
-static lv_color_t lvgl_buf1[LCD_WIDTH * (LCD_HEIGHT / 4)] __attribute__((aligned(32)));
-static lv_color_t lvgl_buf2[LCD_WIDTH * (LCD_HEIGHT / 4)] __attribute__((aligned(32)));
+static const char *TAG = "USER_LVGL";
 
-// LCD传输完成回调
-static bool lcd_flush_ready_callback(void *user_ctx)
-{
-    lv_display_t *disp = (lv_display_t *)user_ctx;
-    lv_display_flush_ready(disp);
-    return false; // 不需要唤醒高优先级任务
+// LVGL Buffer
+// Allocate buffer in internal RAM for better performance
+// 320 * 240 * 2 / 10 = 15360 bytes. Internal RAM is fine.
+#define LVGL_BUF_SIZE (LCD_WIDTH * LCD_HEIGHT / 10) 
+
+static lv_display_t * disp_handle = NULL;
+static lv_indev_t * indev_handle = NULL;
+static gt911_dev_t tp_dev;
+
+// Flush callback
+static void lvgl_flush_cb(lv_display_t * disp, const lv_area_t * area, uint8_t * px_map) {
+    // The st7789 driver's draw_bitmap function calls esp_lcd_panel_draw_bitmap
+    // esp_lcd_panel_draw_bitmap expects exclusive end coordinates (x2 + 1, y2 + 1)
+    // We pass x2 + 1 and y2 + 1 because lcd_st7789_draw_bitmap passes them directly to esp_lcd_panel_draw_bitmap
+    lcd_st7789_draw_bitmap(area->x1, area->y1, area->x2 + 1, area->y2 + 1, (uint16_t*)px_map);
 }
 
-// LVGL显示刷新回调函数
-void lvgl_flush_cb(lv_display_t *disp, const lv_area_t *area, uint8_t *px_map) {
-    // 检查LVGL传递的区域坐标是否有效
-    if (area == NULL || px_map == NULL) {
-        lv_display_flush_ready(disp);
-        return;
-    }
-    
-    // 检查区域坐标是否合法
-    if (area->x2 < area->x1 || area->y2 < area->y1) {
-        lv_display_flush_ready(disp);
-        return;
-    }
-    
-    // 计算区域宽高
-    int32_t w = area->x2 - area->x1 + 1;
-    int32_t h = area->y2 - area->y1 + 1;
-    
-    // 基本有效性检查
-    if (w <= 0 || h <= 0) {
-        lv_display_flush_ready(disp);
-        return;
-    }
-    
-    // 直接调用LCD驱动
-    // 注意：我们移除了驱动层的静态缓冲区和字节交换，以支持DMA异步传输
-    // 请确保在lv_conf.h中启用了 LV_COLOR_16_SWAP，否则颜色可能会反转
-    lcd_st7789_draw_image(area->x1, area->y1, w, h, (const uint16_t *)px_map);
-    
-    // 注意：不要在这里调用 lv_display_flush_ready(disp);
-    // 它会在DMA传输完成回调 lcd_flush_ready_callback 中被调用
+// Flush ready callback (called from ISR)
+static bool lvgl_flush_ready_callback(void *user_ctx) {
+    lv_display_flush_ready(disp_handle);
+    return false;
 }
 
-
-// GT911触摸芯片实例
-static gt911_dev_t gt911_dev;
-
-// 触摸消抖相关变量
-static uint32_t last_touch_time = 0;
-static bool last_touch_state = false;
-static lv_point_t last_touch_point = {0, 0};
-#define TOUCH_DEBOUNCE_MS 50  // 触摸消抖时间（毫秒）
-#define TOUCH_POSITION_THRESHOLD 10  // 位置变化阈值（像素）
-
-
-// LVGL触摸输入回调（全局静态函数）
-static void lvgl_touch_read_cb(lv_indev_t *indev, lv_indev_data_t *data) {
-    uint32_t current_time = lv_tick_get();
-    
-    gt911_read(&gt911_dev);
-    bool is_touched = gt911_is_touched(&gt911_dev);
-    
-    if (is_touched) {
-        tp_point_t p = gt911_get_point(&gt911_dev, 0);
-        lv_point_t current_point;
-        current_point.x = p.y + (LCD_WIDTH - LCD_HEIGHT);
-        current_point.y = LCD_HEIGHT - (p.x - (LCD_WIDTH - LCD_HEIGHT));
-        
-      
-        // 触摸消抖逻辑
-        if (!last_touch_state) {
-            // 从未触摸到触摸状态
-            if (current_time - last_touch_time > TOUCH_DEBOUNCE_MS) {
-                data->point = current_point;
-                data->state = LV_INDEV_STATE_PRESSED;
-                last_touch_state = true;
-                last_touch_point = current_point;
-                last_touch_time = current_time;
-            } else {
-                // 在消抖时间内，保持释放状态
-                data->state = LV_INDEV_STATE_RELEASED;
-            }
-        } else {
-            // 持续触摸状态，更新坐标
-            data->point = current_point;
-            data->state = LV_INDEV_STATE_PRESSED;
-            last_touch_point = current_point;
-            last_touch_time = current_time;
-        }
+// Touch read callback
+static void lvgl_touch_read_cb(lv_indev_t * indev, lv_indev_data_t * data) {
+    gt911_read(&tp_dev);
+    if (tp_dev.is_touched && tp_dev.touches > 0) {
+        data->state = LV_INDEV_STATE_PRESSED;
+        data->point.x = tp_dev.points[0].x;
+        data->point.y = tp_dev.points[0].y;
     } else {
-        // 触摸释放
         data->state = LV_INDEV_STATE_RELEASED;
-        if (last_touch_state) {
-            last_touch_state = false;
-            last_touch_time = current_time;
-        }
     }
 }
 
+// Tick timer callback
+static void lvgl_tick_task(void *arg) {
+    lv_tick_inc(1);
+}
+
+// LVGL Task Handler
+static void lvgl_task_handler(void *arg) {
+    ESP_LOGI(TAG, "LVGL Task Started");
+    while (1) {
+        lv_timer_handler();
+        vTaskDelay(pdMS_TO_TICKS(10));
+    }
+}
 
 void user_lvgl_init(void) {
- // 初始化LCD硬件
-    lcd_st7789_init();
+    ESP_LOGI(TAG, "Initializing User LVGL");
 
-    // 初始化LVGL核心
+    // 1. Initialize Hardware
+    // LCD
+    ESP_ERROR_CHECK(lcd_st7789_init());
+    lcd_st7789_register_flush_ready_cb(lvgl_flush_ready_callback, NULL);
+    
+    // Touch
+    ESP_ERROR_CHECK(gt911_init_default(&tp_dev));
+
+    // 2. Initialize LVGL
     lv_init();
-    
-    // 创建显示对象
-    lv_display_t *disp = lv_display_create(LCD_WIDTH, LCD_HEIGHT);
-    
-    // 注册LCD传输完成回调
-    lcd_st7789_register_flush_ready_cb(lcd_flush_ready_callback, disp);
 
-    // 设置刷新回调
-    lv_display_set_flush_cb(disp, lvgl_flush_cb);
+    // 3. Create Display
+    disp_handle = lv_display_create(LCD_WIDTH, LCD_HEIGHT);
     
-    // 设置显示缓冲区
-    lv_display_set_buffers(disp, lvgl_buf1, lvgl_buf2, sizeof(lvgl_buf1), LV_DISPLAY_RENDER_MODE_PARTIAL);
+    // Allocate buffer
+    size_t buf_size_bytes = LVGL_BUF_SIZE * sizeof(uint16_t); // RGB565
+    void *buf1 = heap_caps_malloc(buf_size_bytes, MALLOC_CAP_DMA | MALLOC_CAP_INTERNAL);
+    if (buf1 == NULL) {
+        ESP_LOGE(TAG, "Failed to allocate LVGL buffer");
+        return;
+    }
+    
+    lv_display_set_buffers(disp_handle, buf1, NULL, buf_size_bytes, LV_DISPLAY_RENDER_MODE_PARTIAL);
+    lv_display_set_flush_cb(disp_handle, lvgl_flush_cb);
+    
+    // 4. Create Input Device
+    indev_handle = lv_indev_create();
+    lv_indev_set_type(indev_handle, LV_INDEV_TYPE_POINTER);
+    lv_indev_set_read_cb(indev_handle, lvgl_touch_read_cb);
 
-    // 初始化GT911触摸芯片
-    gt911_init_default(&gt911_dev);
-    gt911_set_resolution(&gt911_dev, LCD_WIDTH, LCD_HEIGHT);
-    gt911_set_rotation(&gt911_dev, ROTATION_NORMAL);
+    // 5. Create Tick Timer
+    const esp_timer_create_args_t tick_timer_args = {
+        .callback = &lvgl_tick_task,
+        .name = "lvgl_tick"
+    };
+    esp_timer_handle_t tick_timer;
+    ESP_ERROR_CHECK(esp_timer_create(&tick_timer_args, &tick_timer));
+    ESP_ERROR_CHECK(esp_timer_start_periodic(tick_timer, 1000)); // 1ms
 
-    // 初始化LVGL输入设备驱动
-    lv_indev_t *indev = lv_indev_create();
-    lv_indev_set_type(indev, LV_INDEV_TYPE_POINTER);
-    lv_indev_set_read_cb(indev, lvgl_touch_read_cb);
+    // 6. Create Task
+    xTaskCreate(lvgl_task_handler, "lvgl_task", 4096, NULL, 5, NULL);
+    
+    // 7. Turn on backlight
+    lcd_st7789_set_backlight(true);
+    
+    ESP_LOGI(TAG, "User LVGL Initialized");
 }
