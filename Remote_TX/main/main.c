@@ -4,6 +4,7 @@
 static void user_component_init(void){
     tusb_serial_init();
     user_lvgl_init();
+    ui_init();
 }
 
 void app_main(void) {
