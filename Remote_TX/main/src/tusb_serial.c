@@ -12,6 +12,7 @@
 #include "freertos/queue.h"
 #include "tinyusb.h"
 #include "tusb_cdc_acm.h"
+#include "tusb_console.h"
 #include "sdkconfig.h"
 #include "include/tusb_serial.h"
 
@@ -141,6 +142,8 @@ void tusb_serial_init(void)
                         CDC_EVENT_LINE_STATE_CHANGED,
                         &tinyusb_cdc_line_state_changed_callback));
 #endif
+
+    ESP_ERROR_CHECK(esp_tusb_init_console(TINYUSB_CDC_ACM_0));
 
     ESP_LOGI(TAG, "USB initialization DONE");
 
