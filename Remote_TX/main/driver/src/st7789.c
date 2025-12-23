@@ -1,4 +1,4 @@
-#include "include/st7789.h"
+#include "driver/inc/st7789.h"
 #include <stdlib.h>
 #include <string.h>
 #include "freertos/FreeRTOS.h"

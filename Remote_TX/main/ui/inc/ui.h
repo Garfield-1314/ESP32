@@ -7,7 +7,8 @@ extern "C" {
 
 #include "lvgl.h"
 
-void ui_init(void);
+void create_ui(void);
+void switch_page_cb(lv_event_t * e);
 
 #ifdef __cplusplus
 }

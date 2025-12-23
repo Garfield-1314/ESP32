@@ -14,7 +14,7 @@
 #include "tusb_cdc_acm.h"
 #include "tusb_console.h"
 #include "sdkconfig.h"
-#include "include/tusb_serial.h"
+#include "driver/inc/tusb_serial.h"
 
 static const char *TAG = "tusb_serial";
 static uint8_t rx_buf[CONFIG_TINYUSB_CDC_RX_BUFSIZE + 1];
