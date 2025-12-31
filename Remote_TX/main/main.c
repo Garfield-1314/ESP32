@@ -5,10 +5,8 @@ gt911_dev_t gt911_dev;
 static void user_component_init(void){
     tusb_serial_init();
     vTaskDelay(pdMS_TO_TICKS(1000));
-    lcd_st7789_init();
-    gt911_init_default(&gt911_dev);
     user_lvgl_init();
-    ui_init();
+    create_ui();
 }
 
 void app_main(void) {

@@ -1,4 +1,4 @@
-#include "include/gt911.h"
+#include "driver/inc/gt911.h"
 #include <string.h>
 static const char *TAG = "Touch_GT911";
 
