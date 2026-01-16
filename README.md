@@ -17,3 +17,8 @@ git submodule update --init --recursive
 # Install tools 
 ./install.sh 
 ```
+
+```bash
+cd ..
+source ./esp-idf/export.sh
+```
