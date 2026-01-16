@@ -6,13 +6,13 @@ Follow these steps to initialize the ESP-IDF submodule and install dependencies 
 
 ```bash
 # Initialize and update submodules
-git submodule init
-git submodule update
+git submodule init 
+git submodule update --progress
 
 # Switch to the specific ESP-IDF version
 cd esp-idf
 git checkout v5.5.1
-git submodule update --init --recursive
+git submodule update --init --recursive --progress
 
 # Install tools 
 ./install.sh 
