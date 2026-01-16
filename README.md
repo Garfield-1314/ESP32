@@ -14,6 +14,6 @@ cd esp-idf
 git checkout v5.5.1
 git submodule update --init --recursive
 
-# Install tools for ESP32-S3
-./install.sh esp32s3
+# Install tools 
+./install.sh 
 ```
