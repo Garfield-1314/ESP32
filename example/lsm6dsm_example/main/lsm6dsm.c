@@ -172,6 +172,139 @@ void lsm6dsm_set_range(lsm6dsm_afs_t afs, lsm6dsm_aodr_t aodr,
     }
 }
 
+#if LSM6DSM_USE_MAGNETOMETER
+/* ==================== LIS2MDL via SLV0 ==================== */
+
+static bool s_mag_available = false;
+
+static esp_err_t lis2mdl_write_slv0(uint8_t subaddr, uint8_t data)
+{
+    esp_err_t ret;
+
+    /* Enter embedded page */
+    ret = lsm6dsm_write_reg(LSM6DSM_FUNC_CFG_ACCESS, LSM6DSM_FUNC_CFG_EN);
+    if (ret != ESP_OK) return ret;
+
+    uint8_t write_addr = (LIS2MDL_I2C_ADDR << 1) | 0; /* write */
+    lsm6dsm_write_reg(LSM6DSM_SLV0_ADD, write_addr);
+    lsm6dsm_write_reg(LSM6DSM_SLV0_SUBADD, subaddr);
+    lsm6dsm_write_reg(0x0E, data);                    /* DATAWRITE */
+    lsm6dsm_write_reg(LSM6DSM_SLAVE0_CONFIG, 0x01);   /* numop=1, write */
+
+    /* Exit embedded page to trigger the write */
+    ret = lsm6dsm_write_reg(LSM6DSM_FUNC_CFG_ACCESS, 0x00);
+
+    vTaskDelay(pdMS_TO_TICKS(2));
+    return ret;
+}
+
+static esp_err_t lis2mdl_read_slv0(uint8_t subaddr, uint8_t *data)
+{
+    esp_err_t ret;
+
+    /* Enter embedded page */
+    ret = lsm6dsm_write_reg(LSM6DSM_FUNC_CFG_ACCESS, LSM6DSM_FUNC_CFG_EN);
+    if (ret != ESP_OK) return ret;
+
+    uint8_t read_addr = (LIS2MDL_I2C_ADDR << 1) | 1;  /* read */
+    lsm6dsm_write_reg(LSM6DSM_SLV0_ADD, read_addr);
+    lsm6dsm_write_reg(LSM6DSM_SLV0_SUBADD, subaddr);
+    lsm6dsm_write_reg(LSM6DSM_SLAVE0_CONFIG, 0x01);   /* numop=1 */
+
+    /* Exit */
+    ret = lsm6dsm_write_reg(LSM6DSM_FUNC_CFG_ACCESS, 0x00);
+    if (ret != ESP_OK) return ret;
+
+    /* Trigger sensor hub to execute the read */
+    ret = lsm6dsm_write_reg(LSM6DSM_MASTER_CONFIG,
+                             LSM6DSM_MASTER_MASTER_ON | LSM6DSM_MASTER_PULL_UP_EN);
+    if (ret != ESP_OK) return ret;
+    vTaskDelay(pdMS_TO_TICKS(5));
+
+    /* Disable master */
+    lsm6dsm_write_reg(LSM6DSM_MASTER_CONFIG, 0x00);
+
+    /* Read result */
+    return lsm6dsm_read_regs(LSM6DSM_SENSORHUB1_REG, data, 1);
+}
+
+static void lsm6dsm_setup_magnetometer(void)
+{
+    uint8_t whoami = 0;
+    esp_err_t ret;
+
+    ESP_LOGI(TAG, "Initializing LIS2MDL via SLV0...");
+
+    /* Enable pass-through */
+    ret = lsm6dsm_write_reg(LSM6DSM_MASTER_CONFIG,
+                             LSM6DSM_MASTER_PASS_THROUGH | LSM6DSM_MASTER_PULL_UP_EN);
+    if (ret != ESP_OK) {
+        ESP_LOGW(TAG, "pass-through failed: %d", ret);
+        return;
+    }
+    vTaskDelay(pdMS_TO_TICKS(10));
+
+    /* Read WHO_AM_I */
+    ret = lis2mdl_read_slv0(LIS2MDL_WHO_AM_I, &whoami);
+    if (ret != ESP_OK || whoami != LIS2MDL_WHO_AM_I_VAL) {
+        ESP_LOGW(TAG, "LIS2MDL not detected! WHO_AM_I=0x%02X", whoami);
+        lsm6dsm_write_reg(LSM6DSM_MASTER_CONFIG, 0x00);
+        return;
+    }
+    ESP_LOGI(TAG, "LIS2MDL detected! WHO_AM_I=0x%02X", whoami);
+
+    /* Soft reset */
+    lis2mdl_write_slv0(LIS2MDL_CFG_REG_A, LIS2MDL_CFG_A_SOFT_RST);
+    vTaskDelay(pdMS_TO_TICKS(20));
+
+    /* Configure: continuous mode, 100Hz, LPF */
+    uint8_t cfg_a = LIS2MDL_MD_CONTINUOUS | LIS2MDL_ODR_100HZ | LIS2MDL_CFG_A_LPF;
+    lis2mdl_write_slv0(LIS2MDL_CFG_REG_A, cfg_a);
+    vTaskDelay(pdMS_TO_TICKS(10));
+
+    /* Enable BDU */
+    lis2mdl_write_slv0(LIS2MDL_CFG_REG_C, LIS2MDL_CFG_C_BDU);
+    vTaskDelay(pdMS_TO_TICKS(10));
+
+    /* Disable pass-through */
+    lsm6dsm_write_reg(LSM6DSM_MASTER_CONFIG, 0x00);
+    vTaskDelay(pdMS_TO_TICKS(10));
+
+    ESP_LOGI(TAG, "LIS2MDL configured");
+
+    /* === Setup Sensor Hub for continuous reading === */
+    ret = lsm6dsm_write_reg(LSM6DSM_FUNC_CFG_ACCESS, LSM6DSM_FUNC_CFG_EN);
+    if (ret != ESP_OK) return;
+
+    uint8_t read_addr = (LIS2MDL_I2C_ADDR << 1) | 1;
+    lsm6dsm_write_reg(LSM6DSM_SLV0_ADD, read_addr);
+    lsm6dsm_write_reg(LSM6DSM_SLV0_SUBADD, LIS2MDL_OUTX_L_REG);
+    lsm6dsm_write_reg(LSM6DSM_SLAVE0_CONFIG, 0x46); /* 6 bytes, ODR/2 */
+
+    lsm6dsm_write_reg(LSM6DSM_FUNC_CFG_ACCESS, 0x00);
+
+    lsm6dsm_write_reg(LSM6DSM_CTRL10_C, 0x04); /* enable func */
+
+    ret = lsm6dsm_write_reg(LSM6DSM_MASTER_CONFIG,
+                             LSM6DSM_MASTER_MASTER_ON | LSM6DSM_MASTER_PULL_UP_EN);
+    if (ret != ESP_OK) {
+        ESP_LOGW(TAG, "Sensor Hub enable failed: %d", ret);
+        return;
+    }
+    vTaskDelay(pdMS_TO_TICKS(10));
+
+    uint8_t nack = 0;
+    lsm6dsm_read_regs(LSM6DSM_FUNC_SRC2, &nack, 1);
+    if (nack & 0x08) {
+        ESP_LOGW(TAG, "LIS2MDL NACK on Sensor Hub");
+        return;
+    }
+
+    s_mag_available = true;
+    ESP_LOGI(TAG, "Sensor Hub reading LIS2MDL OK");
+}
+#endif /* LSM6DSM_USE_MAGNETOMETER */
+
 /* ==================== Init ==================== */
 
 esp_err_t lsm6dsm_init(void)
@@ -268,6 +401,19 @@ esp_err_t lsm6dsm_init(void)
     vTaskDelay(pdMS_TO_TICKS(50));
 
     ESP_LOGI(TAG, "LSM6DSM ready on I2C addr 0x%02X", s_i2c_addr);
+
+#if LSM6DSM_USE_MAGNETOMETER
+    vTaskDelay(pdMS_TO_TICKS(20));
+    lsm6dsm_setup_magnetometer();
+    if (s_mag_available) {
+        ESP_LOGI(TAG, "9-Axis mode ready");
+    } else {
+        ESP_LOGI(TAG, "6-Axis mode (no magnetometer)");
+    }
+#else
+    ESP_LOGI(TAG, "6-Axis mode");
+#endif
+
     return ESP_OK;
 }
 
@@ -308,5 +454,71 @@ esp_err_t lsm6dsm_read_data(float *accel_data, float *gyro_data)
         accel_data[2] = (float)az / s_acc_ssvt;
     }
 
+    return ESP_OK;
+}
+
+esp_err_t lsm6dsm_read_all(lsm6dsm_all_data_t *data)
+{
+    if (data == NULL || dev_handle == NULL) {
+        return ESP_ERR_INVALID_ARG;
+    }
+
+    /* Read 6-axis data */
+    float accel[3], gyro[3];
+    esp_err_t ret = lsm6dsm_read_data(accel, gyro);
+    if (ret != ESP_OK) return ret;
+
+    data->accel_x = accel[0];
+    data->accel_y = accel[1];
+    data->accel_z = accel[2];
+    data->gyro_x  = gyro[0];
+    data->gyro_y  = gyro[1];
+    data->gyro_z  = gyro[2];
+
+    /* Read temperature */
+    uint8_t temp_raw[2];
+    ret = lsm6dsm_read_regs(0x20, temp_raw, 2);
+    if (ret == ESP_OK) {
+        int16_t temp = (int16_t)(((uint16_t)temp_raw[1] << 8) | temp_raw[0]);
+        data->temperature = (float)temp / 256.0f + 25.0f;
+    } else {
+        data->temperature = 0.0f;
+    }
+
+    /* Magnetometer */
+    data->mag_x = 0.0f;
+    data->mag_y = 0.0f;
+    data->mag_z = 0.0f;
+
+#if LSM6DSM_USE_MAGNETOMETER
+    if (s_mag_available) {
+        uint8_t mag_raw[6];
+        ret = lsm6dsm_read_regs(LSM6DSM_SENSORHUB1_REG, mag_raw, 6);
+        if (ret == ESP_OK) {
+            int16_t mx = (int16_t)(((uint16_t)mag_raw[1] << 8) | mag_raw[0]);
+            int16_t my = (int16_t)(((uint16_t)mag_raw[3] << 8) | mag_raw[2]);
+            int16_t mz = (int16_t)(((uint16_t)mag_raw[5] << 8) | mag_raw[4]);
+            data->mag_x = (float)mx * LIS2MDL_SENSITIVITY;
+            data->mag_y = (float)my * LIS2MDL_SENSITIVITY;
+            data->mag_z = (float)mz * LIS2MDL_SENSITIVITY;
+        }
+    }
+#endif
+
+    return ESP_OK;
+}
+
+esp_err_t lsm6dsm_read_temperature(float *temp_c)
+{
+    if (temp_c == NULL || dev_handle == NULL) {
+        return ESP_ERR_INVALID_ARG;
+    }
+
+    uint8_t raw[2];
+    esp_err_t ret = lsm6dsm_read_regs(0x20, raw, 2);
+    if (ret != ESP_OK) return ret;
+
+    int16_t temp_raw = (int16_t)(((uint16_t)raw[1] << 8) | raw[0]);
+    *temp_c = (float)temp_raw / 256.0f + 25.0f;
     return ESP_OK;
 }

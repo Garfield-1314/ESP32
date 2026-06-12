@@ -7,6 +7,11 @@
 extern "C" {
 #endif
 
+/* ==================== Configuration ==================== */
+/* Set to 1 to enable LIS2MDL magnetometer (9-axis mode).
+   Requires LIS2MDL connected to LSM6DSM auxiliary I2C bus. */
+#define LSM6DSM_USE_MAGNETOMETER   1
+
 /* ==================== I2C Configuration ==================== */
 /* Modify these macros to match your hardware wiring */
 #define LSM6DSM_I2C_PORT     0
@@ -18,6 +23,8 @@ extern "C" {
 /* SA0 = GND → 0x6A, SA0 = VCC → 0x6B */
 #define LSM6DSM_I2C_ADDR_LOW   0x6A
 #define LSM6DSM_I2C_ADDR_HIGH  0x6B
+
+#define LIS2MDL_I2C_ADDR       0x1E   /* 7-bit, fixed address */
 
 /* ==================== Registers ==================== */
 #define LSM6DSM_WHO_AM_I      0x0F
@@ -42,6 +49,33 @@ extern "C" {
 #define LSM6DSM_OUTZ_L_XL     0x2C
 #define LSM6DSM_OUTZ_H_XL     0x2D
 
+/* 9-axis / Sensor Hub registers (only used when LSM6DSM_USE_MAGNETOMETER=1) */
+#define LSM6DSM_MASTER_CONFIG   0x1A
+#define LSM6DSM_CTRL10_C        0x19
+#define LSM6DSM_FUNC_CFG_ACCESS 0x01
+#define LSM6DSM_FUNC_CFG_EN     0x20
+#define LSM6DSM_SLV0_ADD        0x02
+#define LSM6DSM_SLV0_SUBADD     0x03
+#define LSM6DSM_SLAVE0_CONFIG   0x04
+#define LSM6DSM_SENSORHUB1_REG  0x2E
+#define LSM6DSM_FUNC_SRC2       0x54
+#define LSM6DSM_MASTER_MASTER_ON    0x01
+#define LSM6DSM_MASTER_PASS_THROUGH 0x04
+#define LSM6DSM_MASTER_PULL_UP_EN   0x08
+
+/* LIS2MDL registers */
+#define LIS2MDL_WHO_AM_I       0x4F
+#define LIS2MDL_WHO_AM_I_VAL   0x40
+#define LIS2MDL_CFG_REG_A      0x60
+#define LIS2MDL_CFG_REG_C      0x62
+#define LIS2MDL_OUTX_L_REG     0x68
+#define LIS2MDL_SENSITIVITY    1.5f
+#define LIS2MDL_MD_CONTINUOUS  0x00
+#define LIS2MDL_ODR_100HZ      0x30
+#define LIS2MDL_CFG_A_LPF      0x08
+#define LIS2MDL_CFG_A_SOFT_RST 0x04
+#define LIS2MDL_CFG_C_BDU      0x02
+
 /* CTRL3_C bits */
 #define LSM6DSM_CTRL3_C_SW_RESET 0x01
 #define LSM6DSM_CTRL3_C_IF_INC   0x04
@@ -49,8 +83,7 @@ extern "C" {
 
 /* ==================== Enumerations ==================== */
 
-/* Accelerometer full-scale selection.
-   Datasheet FS_XL encoding: 00=2g, 01=16g, 10=4g, 11=8g */
+/* Accelerometer full-scale selection */
 typedef enum {
     LSM6DSM_AFS_2G  = 0,
     LSM6DSM_AFS_4G  = 1,
@@ -58,7 +91,7 @@ typedef enum {
     LSM6DSM_AFS_16G = 3
 } lsm6dsm_afs_t;
 
-/* Accelerometer ODR selection (ODR_XL bits in CTRL1_XL[7:4]) */
+/* Accelerometer ODR */
 typedef enum {
     LSM6DSM_AODR_POWER_DOWN = 0,
     LSM6DSM_AODR_12_5HZ     = 1,
@@ -73,7 +106,7 @@ typedef enum {
     LSM6DSM_AODR_6660HZ     = 10,
 } lsm6dsm_aodr_t;
 
-/* Gyroscope full-scale selection (FS_G bits in CTRL2_G[3:2], with FS_125 bit) */
+/* Gyroscope full-scale selection */
 typedef enum {
     LSM6DSM_GFS_125DPS   = 0,
     LSM6DSM_GFS_250DPS   = 1,
@@ -82,7 +115,7 @@ typedef enum {
     LSM6DSM_GFS_2000DPS  = 4,
 } lsm6dsm_gfs_t;
 
-/* Gyroscope ODR selection (ODR_G bits in CTRL2_G[7:4]) */
+/* Gyroscope ODR */
 typedef enum {
     LSM6DSM_GODR_POWER_DOWN = 0,
     LSM6DSM_GODR_12_5HZ     = 1,
@@ -99,62 +132,59 @@ typedef enum {
 
 /* ==================== Data Structure ==================== */
 typedef struct {
-    float accel_x;   /* g */
-    float accel_y;   /* g */
-    float accel_z;   /* g */
-    float gyro_x;    /* degrees per second */
-    float gyro_y;    /* degrees per second */
-    float gyro_z;    /* degrees per second */
-} lsm6dsm_data_t;
-
-/* ==================== Internal I2C (shared with 9-axis driver) ==================== */
-
-/**
- * @brief Write a single byte to a LSM6DSM register.
- * @param reg  Register address
- * @param data Data byte to write
- * @return esp_err_t ESP_OK on success
- */
-esp_err_t lsm6dsm_write_reg(uint8_t reg, uint8_t data);
-
-/**
- * @brief Read multiple bytes from LSM6DSM starting at a register.
- * @param reg  Starting register address
- * @param data Output buffer
- * @param len  Number of bytes to read
- * @return esp_err_t ESP_OK on success
- */
-esp_err_t lsm6dsm_read_regs(uint8_t reg, uint8_t *data, size_t len);
+    float accel_x;       /* g */
+    float accel_y;       /* g */
+    float accel_z;       /* g */
+    float gyro_x;        /* degrees per second */
+    float gyro_y;        /* degrees per second */
+    float gyro_z;        /* degrees per second */
+    float mag_x;         /* mGauss (0 if magnetometer not available) */
+    float mag_y;         /* mGauss */
+    float mag_z;         /* mGauss */
+    float temperature;   /* degrees Celsius */
+} lsm6dsm_all_data_t;
 
 /* ==================== API ==================== */
 
 /**
  * @brief Initialize LSM6DSM on I2C bus.
  *        Probes both possible addresses, resets the device,
- *        enables BDU and IF_INC, sets default range (±2g, 416Hz accel;
- *        ±2000dps, 416Hz gyro).
+ *        enables BDU and IF_INC, sets default range.
+ *        If LSM6DSM_USE_MAGNETOMETER=1, also configures LIS2MDL
+ *        via Sensor Hub.
  * @return esp_err_t ESP_OK on success
  */
 esp_err_t lsm6dsm_init(void);
 
 /**
  * @brief Reconfigure accelerometer and gyroscope range/ODR.
- * @param afs  Accelerometer full-scale
- * @param aodr Accelerometer output data rate
- * @param gfs  Gyroscope full-scale
- * @param godr Gyroscope output data rate
  */
 void lsm6dsm_set_range(lsm6dsm_afs_t afs, lsm6dsm_aodr_t aodr,
                        lsm6dsm_gfs_t gfs, lsm6dsm_godr_t godr);
 
 /**
- * @brief Read 6-axis data (gyro then accel, 12 bytes burst).
- *
+ * @brief Read 6-axis data (accelerometer + gyroscope).
+ *        Legacy function for backward compatibility.
  * @param accel_data If non-NULL, filled with [ax, ay, az] in g
  * @param gyro_data  If non-NULL, filled with [gx, gy, gz] in dps
  * @return esp_err_t ESP_OK on success
  */
 esp_err_t lsm6dsm_read_data(float *accel_data, float *gyro_data);
+
+/**
+ * @brief Read all available data (accel + gyro + mag + temperature).
+ *        If magnetometer is not available, mag fields are set to 0.
+ * @param data  Output data
+ * @return esp_err_t ESP_OK on success
+ */
+esp_err_t lsm6dsm_read_all(lsm6dsm_all_data_t *data);
+
+/**
+ * @brief Read temperature from LSM6DSM.
+ * @param temp_c  Output: temperature in degrees Celsius
+ * @return esp_err_t ESP_OK on success
+ */
+esp_err_t lsm6dsm_read_temperature(float *temp_c);
 
 #ifdef __cplusplus
 }

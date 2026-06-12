@@ -1,18 +1,20 @@
 /**
  * @file main.c
- * @brief LSM6DSM example for ESP-IDF
+ * @brief LSM6DSM example with optional LIS2MDL magnetometer (9-axis)
  *
- * This example demonstrates:
- *   1. Initializing the LSM6DSM on I2C bus
- *   2. Reading 6-axis data (accelerometer + gyroscope)
- *   3. Printing data over serial
+ * Features:
+ *   - Initialize LSM6DSM (accel + gyro)
+ *   - If LSM6DSM_USE_MAGNETOMETER=1 in lsm6dsm.h, also initializes
+ *     LIS2MDL magnetometer via Sensor Hub (9-axis mode)
+ *   - Reads and prints all available axes + temperature
  *
- * To use on a different ESP device:
- *   - Edit LSM6DSM_I2C_PORT, LSM6DSM_PIN_SDA, LSM6DSM_PIN_SCL in lsm6dsm.h
+ * Hardware:
+ *   LSM6DSM: SDA=GPIO17, SCL=GPIO18
+ *   LIS2MDL: Connected to LSM6DSM auxiliary I2C (internal)
  */
 
 #include <stdio.h>
-#include <stdlib.h>
+#include <math.h>
 
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
@@ -27,12 +29,19 @@ void app_main(void)
 {
     ESP_LOGI(TAG, "=================================");
     ESP_LOGI(TAG, "  LSM6DSM Example - ESP-IDF");
+
+#if LSM6DSM_USE_MAGNETOMETER
+    ESP_LOGI(TAG, "  9-Axis Mode (with LIS2MDL)");
+#else
+    ESP_LOGI(TAG, "  6-Axis Mode (no magnetometer)");
+#endif
+
     ESP_LOGI(TAG, "=================================");
 
-    /* 0. Initialize USB CDC-ACM (virtual serial port) for debugging */
+    /* Initialize USB CDC-ACM (virtual serial port) */
     tusb_serial_init();
 
-    /* 1. Initialize LSM6DSM */
+    /* Initialize LSM6DSM (and LIS2MDL if enabled) */
     esp_err_t ret = lsm6dsm_init();
     if (ret != ESP_OK) {
         ESP_LOGE(TAG, "LSM6DSM initialization FAILED! err=%d", ret);
@@ -40,29 +49,52 @@ void app_main(void)
         return;
     }
 
-    /* 2. (Optional) Change range/ODR if desired.
-     *    Default is: ±2g accel, ±2000dps gyro, 416Hz ODR for both.
-     *    Example: ±4g accel, ±500dps gyro, 208Hz ODR.
-     *
-     *    lsm6dsm_set_range(LSM6DSM_AFS_4G, LSM6DSM_AODR_208HZ,
-     *                       LSM6DSM_GFS_500DPS, LSM6DSM_GODR_208HZ);
-     */
+    lsm6dsm_all_data_t data;
+    float temperature = 0.0f;
+    int sample_count = 0;
 
-    float accel[3], gyro[3];
-
-    /* 3. Main loop: read and print data */
     while (1) {
-        ret = lsm6dsm_read_data(accel, gyro);
+        ret = lsm6dsm_read_all(&data);
         if (ret == ESP_OK) {
-            ESP_LOGI(TAG, "ACCEL: X=%7.3f g  Y=%7.3f g  Z=%7.3f g  |  "
-                          "GYRO: X=%8.2f dps  Y=%8.2f dps  Z=%8.2f dps",
-                     accel[0], accel[1], accel[2],
-                     gyro[0], gyro[1], gyro[2]);
+            lsm6dsm_read_temperature(&temperature);
+            sample_count++;
+
+            if ((sample_count % 20) == 1) {
+                ESP_LOGI(TAG, "");
+                ESP_LOGI(TAG, "Sample #%d", sample_count);
+                ESP_LOGI(TAG, "------------------------------------------------------------");
+                ESP_LOGI(TAG, "  Sensor      |   X         Y         Z     |  Unit");
+                ESP_LOGI(TAG, "------------------------------------------------------------");
+            }
+
+            ESP_LOGI(TAG, "  ACCEL       | %9.3f  %9.3f  %9.3f  |  g",
+                     data.accel_x, data.accel_y, data.accel_z);
+            ESP_LOGI(TAG, "  GYRO        | %9.2f  %9.2f  %9.2f  |  dps",
+                     data.gyro_x, data.gyro_y, data.gyro_z);
+
+#if LSM6DSM_USE_MAGNETOMETER
+            ESP_LOGI(TAG, "  MAGNETOMETER| %9.2f  %9.2f  %9.2f  |  mGauss",
+                     data.mag_x, data.mag_y, data.mag_z);
+
+            /* Total magnetic field (should be ~250-650 mGauss) */
+            float total_mag = sqrtf(data.mag_x * data.mag_x +
+                                    data.mag_y * data.mag_y +
+                                    data.mag_z * data.mag_z);
+            ESP_LOGI(TAG, "  |B| = %.1f mGauss", total_mag);
+#endif
+
+            /* Total acceleration (should be ~1g at rest) */
+            float total_accel = sqrtf(data.accel_x * data.accel_x +
+                                      data.accel_y * data.accel_y +
+                                      data.accel_z * data.accel_z);
+            ESP_LOGI(TAG, "  |A| = %.3f g  |  Temp = %.2f C",
+                     total_accel, temperature);
+            ESP_LOGI(TAG, "------------------------------------------------------------");
+
         } else {
             ESP_LOGE(TAG, "Read data failed: %d", ret);
         }
 
-        /* Delay ~100ms between reads (~10 Hz output rate) */
         vTaskDelay(pdMS_TO_TICKS(100));
     }
 }
