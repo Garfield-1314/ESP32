@@ -21,7 +21,7 @@ static float s_gyro_ssvt = 14.286f;    /* ±2000dps: 70 mdps/LSB */
 
 /* ==================== Low-level I2C ==================== */
 
-static esp_err_t lsm6dsm_write_reg(uint8_t reg, uint8_t data)
+esp_err_t lsm6dsm_write_reg(uint8_t reg, uint8_t data)
 {
     if (dev_handle == NULL) {
         return ESP_ERR_INVALID_STATE;
@@ -30,7 +30,7 @@ static esp_err_t lsm6dsm_write_reg(uint8_t reg, uint8_t data)
     return i2c_master_transmit(dev_handle, buf, sizeof(buf), -1);
 }
 
-static esp_err_t lsm6dsm_read_regs(uint8_t reg, uint8_t *data, size_t len)
+esp_err_t lsm6dsm_read_regs(uint8_t reg, uint8_t *data, size_t len)
 {
     if (dev_handle == NULL) {
         return ESP_ERR_INVALID_STATE;

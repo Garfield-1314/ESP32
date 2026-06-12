@@ -107,6 +107,25 @@ typedef struct {
     float gyro_z;    /* degrees per second */
 } lsm6dsm_data_t;
 
+/* ==================== Internal I2C (shared with 9-axis driver) ==================== */
+
+/**
+ * @brief Write a single byte to a LSM6DSM register.
+ * @param reg  Register address
+ * @param data Data byte to write
+ * @return esp_err_t ESP_OK on success
+ */
+esp_err_t lsm6dsm_write_reg(uint8_t reg, uint8_t data);
+
+/**
+ * @brief Read multiple bytes from LSM6DSM starting at a register.
+ * @param reg  Starting register address
+ * @param data Output buffer
+ * @param len  Number of bytes to read
+ * @return esp_err_t ESP_OK on success
+ */
+esp_err_t lsm6dsm_read_regs(uint8_t reg, uint8_t *data, size_t len);
+
 /* ==================== API ==================== */
 
 /**
