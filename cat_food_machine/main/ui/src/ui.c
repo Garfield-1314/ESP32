@@ -2,7 +2,7 @@
 
 #include <string.h>
 
-#include "ui/inc/main_page.h"
+#include "ui/inc/app_page.h"
 #include "ui/inc/setting_page.h"
 
 // 通用消抖函数
@@ -23,8 +23,8 @@ void switch_page_cb(lv_event_t *e)
   const char *page_name = (const char *)lv_event_get_user_data(e);
   lv_obj_t *target = NULL;
 
-  if (strcmp(page_name, "main_page") == 0) {
-    target = create_main_page();
+  if (strcmp(page_name, "app_page") == 0) {
+    target = create_app_page();
   } else if (strcmp(page_name, "settings_page") == 0) {
     create_setting_page();
     target = setting_page;
@@ -37,6 +37,6 @@ void switch_page_cb(lv_event_t *e)
 
 void create_ui(void)
 {
-  lv_obj_t *page = create_main_page();
+  lv_obj_t *page = create_app_page();
   lv_scr_load(page);
 }

@@ -8,6 +8,7 @@ SRCS "main.c"
 "device/src/user_lvgl.c"
 
 "ui/src/ui.c"
+"ui/src/app_page.c"
 "ui/src/main_page.c"
 "ui/src/setting_page.c"
 

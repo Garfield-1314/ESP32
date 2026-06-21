@@ -33,7 +33,7 @@ void create_setting_page(void)
   lv_obj_t *back_label = lv_label_create(back_btn);
   lv_label_set_text(back_label, LV_SYMBOL_LEFT " Back");
   lv_obj_center(back_label);
-  lv_obj_add_event_cb(back_btn, switch_page_cb, LV_EVENT_CLICKED, "main_page");
+  lv_obj_add_event_cb(back_btn, switch_page_cb, LV_EVENT_CLICKED, "app_page");
 
   // 信息显示区域
   lv_obj_t *info_cont = lv_obj_create(setting_page);
