@@ -130,63 +130,55 @@ lv_obj_t *create_wifi_config_page(void)
     lv_obj_center(back_label);
     lv_obj_add_event_cb(back_btn, switch_page_cb, LV_EVENT_CLICKED, "app_page");
 
-    /* 内容区域容器 */
-    lv_obj_t *cont = lv_obj_create(wifi_config_page);
-    lv_obj_set_size(cont, 280, 160);
-    lv_obj_align(cont, LV_ALIGN_TOP_MID, 0, 45);
-    lv_obj_set_style_bg_opa(cont, 100, 0);
-    lv_obj_set_style_bg_color(cont, lv_color_hex(0x002a47), 0);
-    lv_obj_set_style_border_width(cont, 1, 0);
-    lv_obj_set_style_border_color(cont, lv_color_white(), 0);
-    lv_obj_set_style_pad_all(cont, 10, 0);
-    lv_obj_set_flex_flow(cont, LV_FLEX_FLOW_COLUMN);
-    lv_obj_set_flex_grow(cont, 1);
+    /* 连接按钮（右上角，与 Back 对称） */
+    connect_btn = lv_btn_create(wifi_config_page);
+    lv_obj_set_size(connect_btn, 70, 30);
+    lv_obj_set_pos(connect_btn, 250, 0);
+    lv_obj_t *btn_label = lv_label_create(connect_btn);
+    lv_label_set_text(btn_label, "Connect");
+    lv_obj_center(btn_label);
+    lv_obj_add_event_cb(connect_btn, connect_btn_cb, LV_EVENT_CLICKED, NULL);
 
-    /* SSID 输入 */
-    lv_obj_t *ssid_label = lv_label_create(cont);
+    /* SSID 输入（上半部分） */
+    lv_obj_t *ssid_label = lv_label_create(wifi_config_page);
     lv_label_set_text(ssid_label, "SSID:");
     lv_obj_set_style_text_color(ssid_label, lv_color_white(), 0);
+    lv_obj_align(ssid_label, LV_ALIGN_TOP_MID, -110, 55);
 
-    ssid_ta = lv_textarea_create(cont);
+    ssid_ta = lv_textarea_create(wifi_config_page);
     lv_textarea_set_placeholder_text(ssid_ta, "Enter WiFi name");
     lv_textarea_set_max_length(ssid_ta, 31);
-    lv_obj_set_width(ssid_ta, 260);
+    lv_obj_set_size(ssid_ta, 260, 35);
+    lv_obj_align(ssid_ta, LV_ALIGN_TOP_MID, 0, 75);
     lv_obj_set_style_text_color(ssid_ta, lv_color_white(), 0);
     lv_obj_set_style_bg_color(ssid_ta, lv_color_hex(0x001a27), 0);
     lv_obj_set_style_border_width(ssid_ta, 1, 0);
     lv_obj_set_style_border_color(ssid_ta, lv_color_hex(0x005a77), 0);
     lv_obj_add_event_cb(ssid_ta, ta_event_cb, LV_EVENT_ALL, NULL);
 
-    /* 密码输入 */
-    lv_obj_t *pass_label = lv_label_create(cont);
+    /* 密码输入（下半部分） */
+    lv_obj_t *pass_label = lv_label_create(wifi_config_page);
     lv_label_set_text(pass_label, "Password:");
     lv_obj_set_style_text_color(pass_label, lv_color_white(), 0);
+    lv_obj_align(pass_label, LV_ALIGN_TOP_MID, -95, 130);
 
-    pass_ta = lv_textarea_create(cont);
+    pass_ta = lv_textarea_create(wifi_config_page);
     lv_textarea_set_placeholder_text(pass_ta, "Enter WiFi password");
     lv_textarea_set_max_length(pass_ta, 63);
     lv_textarea_set_password_mode(pass_ta, true);
-    lv_obj_set_width(pass_ta, 260);
+    lv_obj_set_size(pass_ta, 260, 35);
+    lv_obj_align(pass_ta, LV_ALIGN_TOP_MID, 0, 150);
     lv_obj_set_style_text_color(pass_ta, lv_color_white(), 0);
     lv_obj_set_style_bg_color(pass_ta, lv_color_hex(0x001a27), 0);
     lv_obj_set_style_border_width(pass_ta, 1, 0);
     lv_obj_set_style_border_color(pass_ta, lv_color_hex(0x005a77), 0);
     lv_obj_add_event_cb(pass_ta, ta_event_cb, LV_EVENT_ALL, NULL);
 
-    /* 连接按钮 */
-    connect_btn = lv_btn_create(wifi_config_page);
-    lv_obj_set_size(connect_btn, 120, 40);
-    lv_obj_align(connect_btn, LV_ALIGN_BOTTOM_MID, 0, -80);
-    lv_obj_t *btn_label = lv_label_create(connect_btn);
-    lv_label_set_text(btn_label, "Connect");
-    lv_obj_center(btn_label);
-    lv_obj_add_event_cb(connect_btn, connect_btn_cb, LV_EVENT_CLICKED, NULL);
-
-    /* 状态标签 */
+    /* 状态标签（底部） */
     status_label = lv_label_create(wifi_config_page);
     lv_label_set_text(status_label, "");
     lv_obj_set_style_text_color(status_label, lv_color_white(), 0);
-    lv_obj_align(status_label, LV_ALIGN_BOTTOM_MID, 0, -35);
+    lv_obj_align(status_label, LV_ALIGN_BOTTOM_MID, 0, -10);
 
     /* 键盘 (初始隐藏) */
     kb = lv_keyboard_create(wifi_config_page);
