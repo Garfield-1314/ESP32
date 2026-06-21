@@ -68,11 +68,11 @@ idf.py flash monitor
 - **接口**: SPI
 - **分辨率**: 320x240
 - **引脚**:
-    - MOSI: 38
-    - CLK: 21
-    - CS: 40
-    - DC: 41
-    - RST: 46
+    - MOSI: 36
+    - CLK: 35
+    - CS: 37
+    - DC: 38
+    - RST: 47
     - BL: 48
 
 ### 触摸 (GT911)
@@ -80,8 +80,8 @@ idf.py flash monitor
 - **引脚**:
     - SDA: 2
     - SCL: 1
-    - INT: 45
-    - RST: 37
+    - INT: 21
+    - RST: 14
 
 ## 声明
 本项目部分代码基于 Espressif Systems 的示例进行开发。
