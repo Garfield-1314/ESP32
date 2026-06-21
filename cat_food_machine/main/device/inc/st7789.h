@@ -114,9 +114,22 @@ void lcd_st7789_draw_pixel(int x, int y, uint16_t color);
 void lcd_st7789_fill_rect(int x, int y, int w, int h, uint16_t color);
 
 /**
- * @brief 设置背光状态
+ * @brief 获取当前背光亮度
+ * @return 当前亮度百分比 (0-100)
+ */
+uint8_t lcd_st7789_get_brightness(void);
+
+/**
+ * @brief 设置背光亮度（PWM控制）
  *
- * @param on true为开启，false为关闭
+ * @param percent 亮度百分比 (0 = 关闭, 1~99 = 对应亮度, 100 = 最亮)
+ */
+void lcd_st7789_set_brightness(uint8_t percent);
+
+/**
+ * @brief 设置背光状态（兼容旧接口）
+ *
+ * @param on true为开启(100%), false为关闭(0%)
  */
 void lcd_st7789_set_backlight(bool on);
 

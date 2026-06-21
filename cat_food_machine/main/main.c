@@ -8,6 +8,10 @@ static volatile bool s_feeding_active = false;
 static volatile bool s_feeding_done = false;
 static uint8_t s_feeding_amount = 0;
 
+/* ========== 背光自动熄灭 ========== */
+#define IDLE_TIMEOUT_MS  300000   /* 5 分钟无操作熄灭背光 */
+static bool s_backlight_dimmed = false;
+
 /* WiFi 连接成功后的回调 */
 static void on_wifi_connected(void)
 {
@@ -21,6 +25,16 @@ static void on_feeding_triggered(const feed_schedule_item_t *item)
     ESP_LOGI(TAG, ">>> FEEDING TRIGGERED! Time=%02d:%02d, Amount=%d slot(s)",
              item->hour, item->minute, item->amount);
 
+    /* 如果背光已熄灭，投喂时自动唤醒 */
+    if (s_backlight_dimmed) {
+        s_backlight_dimmed = false;
+        uint8_t saved = lcd_st7789_get_brightness();
+        if (saved == 0) saved = 100;
+        lcd_st7789_set_brightness(saved);
+        lv_disp_trig_activity(NULL);  /* 重置 LVGL 空闲计时，防止立即再次熄灭 */
+        ESP_LOGI(TAG, "Backlight restored for feeding (%d%%)", saved);
+    }
+
     s_feeding_amount = item->amount;
     s_feeding_active = true;
     s_feeding_done = false;
@@ -32,6 +46,25 @@ static void on_feeding_triggered(const feed_schedule_item_t *item)
 static void feeding_popup_timer_cb(lv_timer_t *timer)
 {
     (void)timer;
+
+    /* === 背光自动熄灭 / 唤醒检测 === */
+    uint32_t inactive_ms = lv_disp_get_inactive_time(NULL);
+
+    if (inactive_ms > IDLE_TIMEOUT_MS && !s_backlight_dimmed) {
+        /* 超过 5 分钟无操作，熄灭背光 */
+        s_backlight_dimmed = true;
+        lcd_st7789_set_brightness(0);
+        ESP_LOGI(TAG, "Backlight dimmed (idle %lu ms)", (unsigned long)inactive_ms);
+    } else if (inactive_ms < 2000 && s_backlight_dimmed) {
+        /* 检测到新操作（最近2秒内有触摸），恢复亮度 */
+        s_backlight_dimmed = false;
+        uint8_t saved = lcd_st7789_get_brightness();
+        if (saved == 0) {
+            saved = 100;  /* 防止刚开机未设亮度时无法恢复 */
+        }
+        lcd_st7789_set_brightness(saved);
+        ESP_LOGI(TAG, "Backlight restored to %d%%", saved);
+    }
 
     /* 轮询电机状态：完成则标记 done */
     if (s_feeding_active && !s_feeding_done && feeder_motor_is_idle()) {
@@ -84,6 +117,16 @@ static void feeding_popup_timer_cb(lv_timer_t *timer)
 
 void user_component_init(void)
 {
+    /* 初始化 NVS 闪存（必须最先调用，WiFi、SNTP、投喂计划都依赖它） */
+    esp_err_t nvs_err = nvs_flash_init();
+    if (nvs_err == ESP_ERR_NVS_NO_FREE_PAGES || nvs_err == ESP_ERR_NVS_NEW_VERSION_FOUND) {
+        ESP_LOGW(TAG, "NVS partition needs erase, erasing...");
+        ESP_ERROR_CHECK(nvs_flash_erase());
+        nvs_err = nvs_flash_init();
+    }
+    ESP_ERROR_CHECK(nvs_err);
+    ESP_LOGI(TAG, "NVS flash initialized");
+
     tusb_serial_init();
     vTaskDelay(pdMS_TO_TICKS(1000));
     user_lvgl_init();
@@ -102,6 +145,21 @@ void user_component_init(void)
 
     /* 启动投喂调度器（自动检查时间，触发投喂） */
     feeding_scheduler_start(on_feeding_triggered);
+
+    /* 从 NVS 恢复背光亮度 */
+    {
+        nvs_handle_t nvs;
+        uint8_t brightness = 100;
+        if (nvs_open("lcd_config", NVS_READONLY, &nvs) == ESP_OK) {
+            uint8_t v = 100;
+            if (nvs_get_u8(nvs, "brightness", &v) == ESP_OK) {
+                brightness = (v < 30) ? 30 : v;
+            }
+            nvs_close(nvs);
+        }
+        lcd_st7789_set_brightness(brightness);
+        ESP_LOGI(TAG, "Backlight brightness restored to %d%%", brightness);
+    }
 
     /* 创建 LVGL 定时器用于管理投喂弹窗（每 200ms 检查一次） */
     lv_timer_create(feeding_popup_timer_cb, 200, NULL);

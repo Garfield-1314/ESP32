@@ -7,6 +7,7 @@
 #include "esp_wifi.h"
 #include "esp_event.h"
 #include "esp_log.h"
+#include "esp_timer.h"
 #include "nvs_flash.h"
 #include "nvs.h"
 #include "lwip/err.h"
@@ -22,12 +23,52 @@ static const char *TAG = "wifi_app";
 /* Max retry count */
 #define WIFI_MAX_RETRY     5
 
+/* 10 分钟周期性重试定时器（毫秒） */
+#define RETRY_TIMER_PERIOD_MS  (10 * 60 * 1000)
+
 /* Static variables */
 static int s_retry_num = 0;
 static bool s_is_connected = false;
 static bool s_connecting = false;  /* 正在连接中 */
 static char s_current_ssid[32] = {0};
 static wifi_connected_cb_t s_connected_cb = NULL;
+static esp_timer_handle_t s_retry_timer = NULL;
+
+/* 10 分钟重试定时器回调 */
+static void retry_timer_cb(void *arg)
+{
+    (void)arg;
+    ESP_LOGI(TAG, "Periodic retry (10 min interval)...");
+    s_retry_num = 0;
+    s_connecting = true;
+    esp_wifi_connect();
+}
+
+static void stop_retry_timer(void)
+{
+    if (s_retry_timer != NULL) {
+        esp_timer_stop(s_retry_timer);
+        esp_timer_delete(s_retry_timer);
+        s_retry_timer = NULL;
+    }
+}
+
+static void start_retry_timer(void)
+{
+    if (s_retry_timer != NULL) {
+        return;  /* 已有定时器在运行 */
+    }
+    esp_timer_create_args_t timer_args = {
+        .callback = &retry_timer_cb,
+        .arg = NULL,
+        .name = "wifi_retry",
+        .dispatch_method = ESP_TIMER_TASK,
+    };
+    if (esp_timer_create(&timer_args, &s_retry_timer) == ESP_OK) {
+        esp_timer_start_once(s_retry_timer, RETRY_TIMER_PERIOD_MS * 1000ULL);
+        ESP_LOGI(TAG, "10 min retry timer started");
+    }
+}
 
 static void event_handler(void *arg, esp_event_base_t event_base,
                           int32_t event_id, void *event_data)
@@ -41,7 +82,8 @@ static void event_handler(void *arg, esp_event_base_t event_base,
             s_connecting = true;
             ESP_LOGI(TAG, "retry to connect to the AP (%d/%d)", s_retry_num, WIFI_MAX_RETRY);
         } else {
-            ESP_LOGI(TAG, "connect to the AP fail after %d retries", WIFI_MAX_RETRY);
+            ESP_LOGI(TAG, "connect to the AP fail after %d retries, will retry every 10 min", WIFI_MAX_RETRY);
+            start_retry_timer();
         }
     } else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_CONNECTED) {
         ESP_LOGI(TAG, "connected to AP");
@@ -51,6 +93,7 @@ static void event_handler(void *arg, esp_event_base_t event_base,
         s_retry_num = 0;
         s_is_connected = true;
         s_connecting = false;
+        stop_retry_timer();
 
         /* 触发连接成功的回调 */
         if (s_connected_cb) {
@@ -136,6 +179,9 @@ esp_err_t wifi_app_connect(const char *ssid, const char *password)
         return ESP_ERR_INVALID_ARG;
     }
 
+    /* 停止后台重试定时器（用户主动连接时） */
+    stop_retry_timer();
+
     /* 如果已经连接同一个 SSID，不需要重复连接 */
     if (s_is_connected && strcmp(s_current_ssid, ssid) == 0) {
         ESP_LOGI(TAG, "Already connected to SSID: %s, skipping", ssid);
@@ -193,6 +239,7 @@ esp_err_t wifi_app_connect(const char *ssid, const char *password)
 
 void wifi_app_disconnect(void)
 {
+    stop_retry_timer();
     esp_wifi_disconnect();
     s_is_connected = false;
     memset(s_current_ssid, 0, sizeof(s_current_ssid));

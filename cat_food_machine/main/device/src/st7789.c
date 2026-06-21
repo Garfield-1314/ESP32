@@ -4,6 +4,7 @@
 #include <string.h>
 
 #include "driver/gpio.h"
+#include "driver/ledc.h"
 #include "driver/spi_master.h"
 #include "esp_check.h"
 #include "esp_heap_caps.h"
@@ -22,6 +23,7 @@ static esp_lcd_panel_io_handle_t io_handle = NULL;
 static int lcd_width = 0;
 static int lcd_height = 0;
 static int backlight_pin = -1;
+static uint8_t s_current_brightness = 100;
 
 // 回调函数
 static lcd_flush_ready_cb_t flush_ready_cb = NULL;
@@ -66,12 +68,26 @@ esp_err_t lcd_st7789_init(void)
   lcd_height = config.lcd_height;
   backlight_pin = config.pin_bl;
   ESP_LOGI(TAG, "初始化ST7789 LCD显示屏 (%dx%d)", lcd_width, lcd_height);
-  // 配置背光GPIO
+  /* 配置背光 LEDC (PWM 控制) */
   if (config.pin_bl >= 0) {
-    gpio_config_t bk_gpio_config = {.mode = GPIO_MODE_OUTPUT,
-                                    .pin_bit_mask = 1ULL << config.pin_bl};
-    ESP_ERROR_CHECK(gpio_config(&bk_gpio_config));
-    gpio_set_level(config.pin_bl, 0);  // 初始关闭背光
+    ledc_timer_config_t ledc_timer = {
+        .speed_mode = LEDC_LOW_SPEED_MODE,
+        .timer_num = LEDC_TIMER_0,
+        .duty_resolution = LEDC_TIMER_10_BIT,  /* 0-1023 */
+        .freq_hz = 5000,                        /* 5kHz PWM */
+        .clk_cfg = LEDC_AUTO_CLK,
+    };
+    ESP_ERROR_CHECK(ledc_timer_config(&ledc_timer));
+
+    ledc_channel_config_t ledc_channel = {
+        .gpio_num = config.pin_bl,
+        .speed_mode = LEDC_LOW_SPEED_MODE,
+        .channel = LEDC_CHANNEL_0,
+        .timer_sel = LEDC_TIMER_0,
+        .duty = 0,   /* 初始关闭 */
+        .hpoint = 0,
+    };
+    ESP_ERROR_CHECK(ledc_channel_config(&ledc_channel));
   }
   // 配置SPI接口
   spi_bus_config_t buscfg = {
@@ -133,9 +149,10 @@ esp_err_t lcd_st7789_init(void)
   // 开启显示
   ret = esp_lcd_panel_disp_on_off(panel_handle, true);
 
-  // 开启背光
+  // 开启背光（最亮）
   if (config.pin_bl >= 0) {
-    gpio_set_level(config.pin_bl, 1);
+    ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0, 1023);
+    ledc_update_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0);
   }
 
   ESP_LOGI(TAG, "LCD初始化完成");
@@ -319,11 +336,26 @@ void lcd_st7789_fill_rect(int x, int y, int w, int h, uint16_t color)
   free(line_buffer);
 }
 
+uint8_t lcd_st7789_get_brightness(void)
+{
+  return s_current_brightness;
+}
+
+void lcd_st7789_set_brightness(uint8_t percent)
+{
+  if (backlight_pin < 0) return;
+
+  if (percent > 100) percent = 100;
+
+  s_current_brightness = percent;
+  uint32_t duty = (uint32_t)percent * 1023 / 100;
+  ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0, duty);
+  ledc_update_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0);
+}
+
 void lcd_st7789_set_backlight(bool on)
 {
-  if (backlight_pin >= 0) {
-    gpio_set_level(backlight_pin, on ? 1 : 0);
-  }
+  lcd_st7789_set_brightness(on ? 100 : 0);
 }
 
 int lcd_st7789_get_width(void)
