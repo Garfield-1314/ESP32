@@ -5,6 +5,7 @@
 #include "esp_mac.h"
 #include "esp_system.h"
 #include "ui/inc/ui.h"
+#include "ui/inc/wifi_config_page.h"
 
 #define FIRMWARE_VERSION "0.0.1"
 

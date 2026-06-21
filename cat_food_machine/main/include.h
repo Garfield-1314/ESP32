@@ -9,5 +9,7 @@
 #include "device/inc/user_lvgl.h"
 #include "device/inc/st7789.h"
 #include "device/inc/gt911.h"
+#include "device/inc/wifi_app.h"
+#include "device/inc/sntp_time.h"
 
 #include "ui/inc/ui.h"
