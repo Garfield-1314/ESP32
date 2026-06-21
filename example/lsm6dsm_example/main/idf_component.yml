@@ -1,0 +1,3 @@
+description: LSM6DSM example component
+dependencies:
+    espressif/esp_tinyusb: "^1"
