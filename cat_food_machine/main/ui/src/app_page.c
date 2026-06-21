@@ -107,23 +107,33 @@ lv_obj_t *create_app_page(void)
   lv_label_set_text(date_label, "----/--/--");
   lv_obj_set_style_text_font(date_label, &lv_font_montserrat_18, 0);
   lv_obj_set_style_text_color(date_label, lv_color_hex(0xAAAAAA), 0);
-  lv_obj_align(date_label, LV_ALIGN_CENTER, 0, 30);
+  lv_obj_align(date_label, LV_ALIGN_CENTER, 0, 20);
 
   // 底部应用图标区域
   // WiFi 设置应用图标
   lv_obj_t *wifi_app_btn = lv_btn_create(app_page);
   lv_obj_set_size(wifi_app_btn, 60, 60);
-  lv_obj_align(wifi_app_btn, LV_ALIGN_BOTTOM_LEFT, 55, -20);
+  lv_obj_align(wifi_app_btn, LV_ALIGN_BOTTOM_LEFT, 55, -25);
   lv_obj_t *wifi_app_label = lv_label_create(wifi_app_btn);
   lv_label_set_text(wifi_app_label, LV_SYMBOL_WIFI);
   lv_obj_center(wifi_app_label);
   lv_obj_add_event_cb(wifi_app_btn, switch_page_cb, LV_EVENT_CLICKED,
                       "wifi_config_page");
 
+  // 投喂计划应用图标
+  lv_obj_t *feed_btn = lv_btn_create(app_page);
+  lv_obj_set_size(feed_btn, 60, 60);
+  lv_obj_align(feed_btn, LV_ALIGN_BOTTOM_MID, 0, -25);
+  lv_obj_t *feed_btn_label = lv_label_create(feed_btn);
+  lv_label_set_text(feed_btn_label, LV_SYMBOL_LIST);
+  lv_obj_center(feed_btn_label);
+  lv_obj_add_event_cb(feed_btn, switch_page_cb, LV_EVENT_CLICKED,
+                      "feeding_page");
+
   // 设置功能按钮（圆形图标）
   lv_obj_t *settings_btn = lv_btn_create(app_page);
   lv_obj_set_size(settings_btn, 60, 60);
-  lv_obj_align(settings_btn, LV_ALIGN_BOTTOM_RIGHT, -55, -20);
+  lv_obj_align(settings_btn, LV_ALIGN_BOTTOM_RIGHT, -55, -25);
   lv_obj_t *settings_label = lv_label_create(settings_btn);
   lv_label_set_text(settings_label, LV_SYMBOL_SETTINGS);
   lv_obj_center(settings_label);

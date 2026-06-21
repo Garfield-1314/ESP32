@@ -13,3 +13,6 @@
 #include "device/inc/sntp_time.h"
 
 #include "ui/inc/ui.h"
+
+#include "driver/inc/feeder_motor.h"
+#include "driver/inc/feeding_schedule.h"

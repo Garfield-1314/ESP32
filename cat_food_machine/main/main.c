@@ -2,11 +2,84 @@
 
 static const char *TAG = "main";
 
+/* ========== 投喂弹窗 ========== */
+static lv_obj_t *s_feeding_popup = NULL;
+static volatile bool s_feeding_active = false;
+static volatile bool s_feeding_done = false;
+static uint8_t s_feeding_amount = 0;
+
 /* WiFi 连接成功后的回调 */
 static void on_wifi_connected(void)
 {
     ESP_LOGI(TAG, "WiFi connected, starting SNTP time sync...");
     sntp_time_init();
+}
+
+/* 投喂触发回调：调度器匹配到投喂时间时调用 */
+static void on_feeding_triggered(const feed_schedule_item_t *item)
+{
+    ESP_LOGI(TAG, ">>> FEEDING TRIGGERED! Time=%02d:%02d, Amount=%d slot(s)",
+             item->hour, item->minute, item->amount);
+
+    s_feeding_amount = item->amount;
+    s_feeding_active = true;
+    s_feeding_done = false;
+
+    feeder_motor_dispense(item->amount);
+}
+
+/* LVGL 定时器回调：管理投喂弹窗的显示与隐藏（在 LVGL 上下文中执行） */
+static void feeding_popup_timer_cb(lv_timer_t *timer)
+{
+    (void)timer;
+
+    /* 轮询电机状态：完成则标记 done */
+    if (s_feeding_active && !s_feeding_done && feeder_motor_is_idle()) {
+        s_feeding_done = true;
+        ESP_LOGI(TAG, "Feeding done (motor idle)");
+    }
+
+    if (s_feeding_active && !s_feeding_done && s_feeding_popup == NULL) {
+        /* 弹窗创建在顶层悬浮层上，切屏不会被销毁 */
+        s_feeding_popup = lv_obj_create(lv_layer_top());
+        lv_obj_set_size(s_feeding_popup, 220, 100);
+        lv_obj_center(s_feeding_popup);
+        lv_obj_set_style_bg_color(s_feeding_popup, lv_color_hex(0x001a27), 0);
+        lv_obj_set_style_bg_opa(s_feeding_popup, 230, 0);
+        lv_obj_set_style_border_width(s_feeding_popup, 2, 0);
+        lv_obj_set_style_border_color(s_feeding_popup, lv_color_hex(0x00AA00), 0);
+        lv_obj_set_style_radius(s_feeding_popup, 10, 0);
+        lv_obj_set_style_pad_all(s_feeding_popup, 15, 0);
+
+        /* 标题 */
+        lv_obj_t *title = lv_label_create(s_feeding_popup);
+        lv_label_set_text(title, LV_SYMBOL_PLAY " Feeding...");
+        lv_obj_set_style_text_font(title, &lv_font_montserrat_14, 0);
+        lv_obj_set_style_text_color(title, lv_color_hex(0x00FF00), 0);
+        lv_obj_align(title, LV_ALIGN_TOP_MID, 0, 5);
+
+        /* 详细信息 */
+        lv_obj_t *info = lv_label_create(s_feeding_popup);
+        char buf[32];
+        snprintf(buf, sizeof(buf), "%d slot(s)", s_feeding_amount);
+        lv_label_set_text(info, buf);
+        lv_obj_set_style_text_font(info, &lv_font_montserrat_18, 0);
+        lv_obj_set_style_text_color(info, lv_color_white(), 0);
+        lv_obj_center(info);
+
+        ESP_LOGI(TAG, "Feeding popup shown");
+    }
+
+    if (s_feeding_done && s_feeding_popup != NULL) {
+        /* 投喂完成，关闭弹窗 */
+        if (lv_obj_is_valid(s_feeding_popup)) {
+            lv_obj_del(s_feeding_popup);
+        }
+        s_feeding_popup = NULL;
+        s_feeding_active = false;
+        s_feeding_done = false;
+        ESP_LOGI(TAG, "Feeding popup closed");
+    }
 }
 
 void user_component_init(void)
@@ -15,6 +88,23 @@ void user_component_init(void)
     vTaskDelay(pdMS_TO_TICKS(1000));
     user_lvgl_init();
     create_ui();
+
+    /* 初始化步进电机 (A4988) */
+    feeder_motor_init();
+
+    /* 从 NVS 加载投喂计划 */
+    esp_err_t sched_err = feed_schedule_load();
+    if (sched_err != ESP_OK) {
+        ESP_LOGW(TAG, "Failed to load feeding schedule: %s", esp_err_to_name(sched_err));
+    } else {
+        ESP_LOGI(TAG, "Feeding schedule loaded (%d items)", feed_schedule_get_count());
+    }
+
+    /* 启动投喂调度器（自动检查时间，触发投喂） */
+    feeding_scheduler_start(on_feeding_triggered);
+
+    /* 创建 LVGL 定时器用于管理投喂弹窗（每 200ms 检查一次） */
+    lv_timer_create(feeding_popup_timer_cb, 200, NULL);
 
     /* 初始化 WiFi (自动尝试连接上一次保存的网络) */
     wifi_app_init();
