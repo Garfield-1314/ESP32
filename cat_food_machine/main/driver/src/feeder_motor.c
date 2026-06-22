@@ -92,12 +92,13 @@ void feeder_motor_init(void)
     };
     gpio_config(&io_conf);
 
-    /* 初始状态：EN=高(禁止)，16 细分 MS1=0,MS2=0,MS3=1 */
+    /* 初始状态：EN=高(禁止)，16 细分 MS1=1,MS2=1,MS3=1 */
+    /* 16 细分 */
     gpio_set_level(MOTOR_EN_GPIO, 1);
     gpio_set_level(MOTOR_STEP_GPIO, 0);
     gpio_set_level(MOTOR_DIR_GPIO, 0);
-    gpio_set_level(MOTOR_MS1_GPIO, 0);   /* 16 细分 */
-    gpio_set_level(MOTOR_MS2_GPIO, 0);
+    gpio_set_level(MOTOR_MS1_GPIO, 1);   
+    gpio_set_level(MOTOR_MS2_GPIO, 1);
     gpio_set_level(MOTOR_MS3_GPIO, 1);
 
     s_running = false;

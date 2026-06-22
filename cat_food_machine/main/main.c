@@ -19,6 +19,32 @@ static void on_wifi_connected(void)
     sntp_time_init();
 }
 
+/* 手动喂食：外部可调用，喂指定仓位数 */
+void manual_feeding_start(uint8_t slots)
+{
+    if (s_feeding_active) {
+        ESP_LOGW(TAG, "Feeding already in progress");
+        return;
+    }
+
+    /* 如果背光已熄灭，喂食时自动唤醒 */
+    if (s_backlight_dimmed) {
+        s_backlight_dimmed = false;
+        uint8_t saved = lcd_st7789_get_brightness();
+        if (saved == 0) saved = 100;
+        lcd_st7789_set_brightness(saved);
+        lv_disp_trig_activity(NULL);
+        ESP_LOGI(TAG, "Backlight restored for manual feeding (%d%%)", saved);
+    }
+
+    s_feeding_amount = slots;
+    s_feeding_active = true;
+    s_feeding_done = false;
+
+    feeder_motor_dispense(slots);
+    ESP_LOGI(TAG, "Manual feeding started: %d slot(s)", slots);
+}
+
 /* 投喂触发回调：调度器匹配到投喂时间时调用 */
 static void on_feeding_triggered(const feed_schedule_item_t *item)
 {
