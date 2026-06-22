@@ -8,13 +8,13 @@ This project contains multiple development examples based on ESP32-S3, covering 
 
 - [esp-idf/](esp-idf/): ESP-IDF framework submodule (v5.5.1).
 - [example/](example/): Example projects directory.
-    - [example/LVGL/](example/LVGL/): Core graphics project, including:
+    - [example/LVGL/](example/LVGL/): LVGL graphics demo, including:
         - LVGL (v8.4.0) integration.
         - **ST7789** LCD driver (320x240, SPI).
         - **GT911** capacitive touch driver (I2C).
         - **TinyUSB** CDC virtual serial port.
-        - Multi-page UI design (Main page, App page).
-    - [example/dvp_spi_lcd/](example/dvp_spi_lcd/): Hardware integration example, demonstrating capturing DVP camera data and displaying it in real-time on an SPI LCD (ST7789).
+        - Interactive UI with demo buttons.
+    - [example/dvp_spi_lcd_example/](example/dvp_spi_lcd_example/): Hardware integration example, demonstrating capturing DVP camera data and displaying it in real-time on an SPI LCD (ST7789).
 
 ## Environment Setup
 
@@ -45,7 +45,7 @@ source ./esp-idf/export.sh
 ## Project Usage
 
 ### LVGL Example
-Demonstrates running UI on ESP32-S3 with USB virtual serial communication.
+Demonstrates LVGL UI on ESP32-S3 with USB virtual serial communication.
 ```bash
 cd example/LVGL
 idf.py set-target esp32s3
@@ -56,7 +56,7 @@ idf.py flash monitor
 ### DVP Camera & LCD Example
 Demonstrates refreshing DVP camera images to an SPI LCD.
 ```bash
-cd example/dvp_spi_lcd
+cd example/dvp_spi_lcd_example
 idf.py set-target esp32s3
 idf.py build
 idf.py flash monitor
@@ -68,11 +68,11 @@ idf.py flash monitor
 - **Interface**: SPI
 - **Resolution**: 320x240
 - **Pins**:
-    - MOSI: 38
-    - CLK: 21
-    - CS: 40
-    - DC: 41
-    - RST: 46
+    - MOSI: 36
+    - CLK: 35
+    - CS: 37
+    - DC: 38
+    - RST: 47
     - BL: 48
 
 ### Touch (GT911)
@@ -80,8 +80,8 @@ idf.py flash monitor
 - **Pins**:
     - SDA: 2
     - SCL: 1
-    - INT: 45
-    - RST: 37
+    - INT: 21
+    - RST: 14
 
 ## Disclaimer
 Parts of this project are based on examples from Espressif Systems.

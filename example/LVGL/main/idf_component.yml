@@ -1,0 +1,4 @@
+description: LVGL example with ST7789 display and GT911 touch
+dependencies:
+    lvgl/lvgl: ^8.4.0
+    espressif/esp_tinyusb: "^1"

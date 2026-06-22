@@ -8,13 +8,13 @@
 
 - [esp-idf/](esp-idf/): Git 管理的 ESP-IDF 框架子模块 (v5.5.1)。
 - [example/](example/): 示例工程目录。
-    - [example/LVGL/](example/LVGL/): 核心图形项目，包含：
+    - [example/LVGL/](example/LVGL/): LVGL 图形演示，包含：
         - LVGL (v8.4.0) 图形库集成。
         - **ST7789** LCD 驱动 (320x240, SPI)。
         - **GT911** 电容触摸驱动 (I2C)。
         - **TinyUSB** CDC 虚拟串口实现。
-        - 多页面 UI 设计 (主页、应用页)。
-    - [example/dvp_spi_lcd/](example/dvp_spi_lcd/): 硬件整合示例，演示如何获取 DVP 摄像头数据并在 SPI 接口的 LCD (ST7789) 上实时显示。
+        - 交互式 UI 演示按钮。
+    - [example/dvp_spi_lcd_example/](example/dvp_spi_lcd_example/): 硬件整合示例，演示如何获取 DVP 摄像头数据并在 SPI 接口的 LCD (ST7789) 上实时显示。
 
 ## 环境搭建
 
@@ -45,7 +45,7 @@ source ./esp-idf/export.sh
 ## 项目运行
 
 ### LVGL 示例
-该项目演示了如何在 ESP32-S3 上运行 UI，并支持通过 USB 虚拟串口进行通信。
+演示在 ESP32-S3 上运行 LVGL 图形界面，支持通过 USB 虚拟串口输出日志。
 ```bash
 cd example/LVGL
 idf.py set-target esp32s3
@@ -56,7 +56,7 @@ idf.py flash monitor
 ### DVP 摄像头显示示例
 该示例演示了将 DVP 摄像头图像刷新到 SPI LCD。
 ```bash
-cd example/dvp_spi_lcd
+cd example/dvp_spi_lcd_example
 idf.py set-target esp32s3
 idf.py build
 idf.py flash monitor
