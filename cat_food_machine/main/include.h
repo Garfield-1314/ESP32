@@ -16,3 +16,6 @@
 
 #include "driver/inc/feeder_motor.h"
 #include "driver/inc/feeding_schedule.h"
+
+/* 手动喂食 */
+void manual_feeding_start(uint8_t slots);

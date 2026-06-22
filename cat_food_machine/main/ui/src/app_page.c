@@ -5,6 +5,7 @@
 #include "ui/inc/ui.h"
 #include "device/inc/wifi_app.h"
 #include "device/inc/sntp_time.h"
+#include "include.h"
 
 // 创建APP界面（开机默认显示）
 lv_obj_t *app_page;
@@ -57,6 +58,13 @@ static void app_page_timer_cb(lv_timer_t *timer)
   }
 }
 
+/* 手动喂食按钮回调 */
+static void manual_feed_btn_cb(lv_event_t *e)
+{
+    (void)e;
+    manual_feeding_start(1);
+}
+
 static lv_timer_t *app_timer = NULL;
 
 static void app_page_delete_cb(lv_event_t *e)
@@ -83,6 +91,15 @@ lv_obj_t *create_app_page(void)
   lv_obj_set_style_text_font(title, &lv_font_montserrat_14, 0);
   lv_obj_set_style_text_color(title, lv_color_white(), 0);
   lv_obj_align(title, LV_ALIGN_TOP_MID, 0, 10);
+
+  /* 手动喂食按钮（右上角） */
+  lv_obj_t *manual_feed_btn = lv_btn_create(app_page);
+  lv_obj_set_size(manual_feed_btn, 60, 30);
+  lv_obj_set_pos(manual_feed_btn, 260, 0);
+  lv_obj_t *manual_feed_label = lv_label_create(manual_feed_btn);
+  lv_label_set_text(manual_feed_label, LV_SYMBOL_PLAY " Feed");
+  lv_obj_center(manual_feed_label);
+  lv_obj_add_event_cb(manual_feed_btn, manual_feed_btn_cb, LV_EVENT_CLICKED, NULL);
 
   /* WiFi 状态行（仅显示状态，不提供按钮） */
   wifi_icon_label = lv_label_create(app_page);
